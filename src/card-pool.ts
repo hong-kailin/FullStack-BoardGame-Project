@@ -45,7 +45,7 @@ export function getLevelDeck(level: number): Card[] {
   }
 }
 
-export function shuffleDeck(deck: Card[]): Card[] {
+export function shuffleDeck<T>(deck: T[]): T[] {
   const shuffled = [...deck];
   for (let i = shuffled.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -54,7 +54,7 @@ export function shuffleDeck(deck: Card[]): Card[] {
   return shuffled;
 }
 
-export function dealCards(deck: Card[], count: number): { dealt: Card[]; remaining: Card[] } {
+export function dealCards<T>(deck: T[], count: number): { dealt: T[]; remaining: T[] } {
   return {
     dealt: deck.slice(0, count),
     remaining: deck.slice(count)
