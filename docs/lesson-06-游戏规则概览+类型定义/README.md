@@ -195,7 +195,24 @@ interface GameState {
 
 ## 7. 动手：创建 types.ts
 
-在 `docs/lesson-06-游戏规则概览+类型定义/` 下创建 `types.ts`：
+真正的游戏类型定义放在项目根目录的 `src/types.ts`。`docs/lesson-06/` 下的 `types.ts` 是简化版示例，方便对照学习。
+
+### 真正的代码在 src/types.ts
+
+```bash
+# 查看真正的类型定义
+cat src/types.ts
+```
+
+### docs 下的示例代码
+
+运行示例：
+
+```bash
+tsx docs/lesson-06-游戏规则概览+类型定义/types.ts
+```
+
+> **为什么分两个地方？** `src/` 里的代码是真正的游戏代码，会不断增长。`docs/` 里只放本节课相关的简化示例，方便你对照学习，不会随着项目变大而变得复杂。
 
 ```typescript
 type GemColor = "red" | "blue" | "green" | "white" | "black";
