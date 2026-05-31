@@ -6,7 +6,7 @@ export function getPlayerBonuses(player: Player): Record<GemColor, number> {
   };
 
   for (const card of player.cards) {
-    bonuses[card.gem]++;
+    bonuses[card.gem] += card.bonusCount;
   }
 
   return bonuses;

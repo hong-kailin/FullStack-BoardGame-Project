@@ -24,6 +24,7 @@ export interface Card {
   gem: GemColor;
   points: number;
   crowns: number;
+  bonusCount: number;                          // 奖励数量（多数卡牌是 1，有些是 2）
   cost: Record<GemColor | "pearl", number>;
 }
 
