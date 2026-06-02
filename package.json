@@ -5,6 +5,7 @@
   "main": "src/index.ts",
   "scripts": {
     "start": "tsx src/index.ts",
+    "build:web": "esbuild src/browser-entry.ts --bundle --outfile=docs/lesson-18-在浏览器中运行游戏逻辑/game.js --format=esm",
     "hello": "tsx docs/lesson-02-Node.js和npm/hello.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -13,6 +14,7 @@
   "license": "ISC",
   "devDependencies": {
     "@types/node": "^25.9.1",
+    "esbuild": "^0.28.0",
     "tsx": "^4.22.3"
   }
 }

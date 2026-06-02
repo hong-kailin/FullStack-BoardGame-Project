@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>游戏逻辑测试</title>
+</head>
+<body>
+  <h1>璀璨宝石对决 — 浏览器版</h1>
+  <p>打开控制台 (F12) 看测试结果</p>
+
+  <script type="module">
+    import { takeTokens, getPlayerBonuses, getActualCost, canAfford } from "./game.js";
+
+    const board = [
+      ["red", "blue", null, "green", "white"],
+      ["black", "pearl", "gold", "red", "blue"],
+      ["green", null, "black", "white", "red"],
+      ["blue", "green", "white", "black", "pearl"],
+      ["red", "blue", "green", "white", "black"]
+    ];
+
+    const result = takeTokens(board, [[0, 0], [0, 1]]);
+    console.log("拿取结果:", result);
+
+    const card = {
+      id: 1, level: 1, gem: "red",
+      points: 1, crowns: 0, bonusCount: 1,
+      cost: { red: 0, blue: 0, green: 2, white: 1, black: 0, pearl: 0 }
+    };
+
+    const player = {
+      id: 0, name: "测试玩家",
+      tokens: { red: 0, blue: 0, green: 1, white: 0, black: 0, pearl: 0, gold: 2 },
+      cards: [
+        { id: 3, gem: "green", bonusCount: 1 },
+        { id: 7, gem: "white", bonusCount: 1 }
+      ],
+      royalCards: [], reservedCards: [], privileges: 0
+    };
+
+    const bonuses = getPlayerBonuses(player);
+    console.log("奖励折扣:", bonuses);
+
+    const actualCost = getActualCost(card, bonuses);
+    console.log("实际费用:", actualCost);
+
+    const affordable = canAfford(player, actualCost);
+    console.log("能否购买:", affordable);
+
+    console.log("所有测试完成！");
+  </script>
+</body>
+</html>
