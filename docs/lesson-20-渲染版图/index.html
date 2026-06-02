@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>璀璨宝石对决 - 版图</title>
+  <style>
+    .board {
+      display: inline-block;
+      border: 2px solid #333;
+    }
+    .row {
+      display: flex;
+    }
+    .cell {
+      width: 50px;
+      height: 50px;
+      border: 1px solid #999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    .cell.empty {
+      background: #eee;
+    }
+    .cell.center {
+      border-color: gold;
+      border-width: 2px;
+    }
+  </style>
+</head>
+<body>
+  <h1>版图</h1>
+  <div id="board-container"></div>
+
+  <script>
+    const board = [
+      ["red", "blue", null, "green", "white"],
+      ["black", "pearl", "gold", "red", "blue"],
+      ["green", null, "black", "white", "red"],
+      ["blue", "green", "white", "black", "pearl"],
+      ["red", "blue", "green", "white", "black"]
+    ];
+
+    const container = document.getElementById("board-container");
+    const boardDiv = document.createElement("div");
+    boardDiv.className = "board";
+
+    for (let r = 0; r < 5; r++) {
+      const rowDiv = document.createElement("div");
+      rowDiv.className = "row";
+
+      for (let c = 0; c < 5; c++) {
+        const cell = document.createElement("div");
+        cell.className = "cell";
+
+        if (r === 2 && c === 2) {
+          cell.classList.add("center");
+        }
+
+        const token = board[r][c];
+        if (token === null) {
+          cell.classList.add("empty");
+          cell.textContent = "";
+        } else {
+          cell.textContent = token;
+        }
+
+        rowDiv.appendChild(cell);
+      }
+
+      boardDiv.appendChild(rowDiv);
+    }
+
+    container.appendChild(boardDiv);
+  </script>
+</body>
+</html>
