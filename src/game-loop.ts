@@ -124,13 +124,6 @@ function processCommand(state: GameState, input: string): { state: GameState; me
 
     const tokenTypes = positions.map(([r, c]) => state.boardTokens[r][c]);
 
-    if (positions.length === 3) {
-      const uniqueColors = new Set(tokenTypes);
-      if (uniqueColors.size !== 3) {
-        return { state, message: "拿取 3 个标记时必须为不同颜色" };
-      }
-    }
-
     const result = takeTokens(state.boardTokens, positions);
 
     let newPlayer = { ...player, tokens: { ...player.tokens } };
