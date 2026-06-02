@@ -1,7 +1,7 @@
 import * as readline from "readline";
 import { GameState, Player, TokenType, Card } from "./types";
 import { shuffleDeck, getLevelDeck } from "./card-pool";
-import { createBoard, getFreePositions, takeTokens } from "./board";
+import { createBoard, takeTokens } from "./board";
 import { renderGameState } from "./renderer";
 import { switchPlayer, checkWinCondition, checkRoyalCardEligibility, enforceTokenLimit } from "./game";
 import { getPlayerBonuses, getActualCost, canAfford, purchaseCard } from "./purchase";
@@ -88,10 +88,17 @@ function processCommand(state: GameState, input: string): { state: GameState; me
       return { state, message: "每次只能拿取 1-3 个标记" };
     }
 
-    const freePositions = getFreePositions(state.boardTokens);
+    // 检查位置是否在版图内且不是黄金
     for (const [r, c] of positions) {
-      if (!freePositions.some(([fr, fc]) => fr === r && fc === c)) {
-        return { state, message: `位置 (${r},${c}) 不可拿取` };
+      if (r < 0 || r >= 5 || c < 0 || c >= 5) {
+        return { state, message: `位置 (${r},${c}) 超出版图范围` };
+      }
+      const token = state.boardTokens[r][c];
+      if (token === null) {
+        return { state, message: `位置 (${r},${c}) 没有标记` };
+      }
+      if (token === "gold") {
+        return { state, message: `位置 (${r},${c}) 是黄金，不能通过 take 拿取` };
       }
     }
 
@@ -234,9 +241,6 @@ export function startGame(): void {
     }
 
     renderGameState(state.players, state.boardTokens, state.pyramid, state.currentPlayerIndex);
-
-    const freePos = getFreePositions(state.boardTokens);
-    console.log("可拿取位置:", freePos.map(([r, c]) => `(${r},${c})`).join(" "));
 
     const player = state.players[state.currentPlayerIndex];
     rl.question(`\n${player.name} 的操作 > `, (input) => {
