@@ -52,6 +52,26 @@ export function getAdjacentTokens(board: (TokenType | null)[][], row: number, co
     .filter(line => line.length >= 1);
 }
 
+export function getFreePositions(board: (TokenType | null)[][]): [number, number][] {
+  const free: [number, number][] = [];
+  for (let r = 0; r < BOARD_SIZE; r++) {
+    for (let c = 0; c < BOARD_SIZE; c++) {
+      const token = board[r][c];
+      if (token === null || token === "gold") continue;
+
+      for (const [dr, dc] of [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]]) {
+        const nr = r + dr;
+        const nc = c + dc;
+        if (nr < 0 || nr >= BOARD_SIZE || nc < 0 || nc >= BOARD_SIZE || board[nr][nc] === null) {
+          free.push([r, c]);
+          break;
+        }
+      }
+    }
+  }
+  return free;
+}
+
 export function takeTokens(
   board: (TokenType | null)[][],
   positions: [number, number][]

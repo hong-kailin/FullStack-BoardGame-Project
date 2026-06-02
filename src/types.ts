@@ -15,42 +15,49 @@
 //   import { Card } from "./types";
 //   这表示从 types.ts 引入 Card 这个类型定义来使用。
 
+// 五种基础宝石颜色，也是卡牌上提供的"宝石奖励"的颜色
 export type GemColor = "red" | "blue" | "green" | "white" | "black";
+
+// 所有标记类型：五种基础宝石 + 珍珠 + 黄金（万能）
 export type TokenType = GemColor | "pearl" | "gold";
 
+// 一张卡牌
 export interface Card {
-  id: number;
-  level: number;
-  gem: GemColor;
-  points: number;
-  crowns: number;
-  bonusCount: number;                          // 奖励数量（多数卡牌是 1，有些是 2）
-  cost: Record<GemColor | "pearl", number>;
+  id: number;                    // 唯一标识，1~24
+  level: number;                 // 卡牌等级 1/2/3，等级越高费用越高、分数越高
+  gem: GemColor;                 // 这张卡提供的宝石奖励颜色
+  points: number;                // 购买后获得的声望点数（胜利条件之一）
+  crowns: number;                // 王冠数量，集满 10 个王冠直接获胜
+  bonusCount: number;            // 奖励数量——购买后相当于持有了几个该颜色的"永久折扣"
+  cost: Record<GemColor | "pearl", number>;  // 购买费用，每种颜色/珍珠需要支付的数量
 }
 
+// 皇室卡牌：满足王冠数量条件时自动获得，提供额外声望点
 export interface RoyalCard {
-  id: number;
-  points: number;
-  crowns: number;
-  requirement: Record<GemColor, number>;
+  id: number;                    // 唯一标识
+  points: number;                // 获得后得到的声望点数
+  crowns: number;                // 王冠数量（也会累加到玩家的总王冠数中）
+  requirement: Record<GemColor, number>;  // 需要玩家拥有的各颜色奖励数量
 }
 
+// 一位玩家
 export interface Player {
-  id: number;
-  name: string;
-  tokens: Record<TokenType, number>;
-  cards: Card[];
-  royalCards: RoyalCard[];
-  reservedCards: Card[];
-  privileges: number;
+  id: number;                    // 0 或 1
+  name: string;                  // 玩家名称
+  tokens: Record<TokenType, number>;  // 当前持有的各种标记的数量（7 种）
+  cards: Card[];                 // 已购买的卡牌（提供声望点、王冠、奖励）
+  royalCards: RoyalCard[];       // 已获得的皇室卡牌
+  reservedCards: Card[];         // 保留的卡牌（从金字塔拿走暂存，最多 3 张）
+  privileges: number;            // 特权次数——可以额外拿取一枚标记
 }
 
+// 完整的游戏状态
 export interface GameState {
-  players: [Player, Player];
-  boardTokens: (TokenType | null)[][];
-  pyramid: Card[][];
-  availableRoyalCards: RoyalCard[];
-  currentPlayerIndex: number;
-  winner: Player | null;
-  bag: TokenType[];
+  players: [Player, Player];     // 两个玩家，索引 0=玩家1，索引 1=玩家2
+  boardTokens: (TokenType | null)[][];  // 5x5 版图上的标记分布，null 表示空位
+  pyramid: Card[][];             // 金字塔卡牌，pyramid[0]=等级1，pyramid[1]=等级2，pyramid[2]=等级3
+  availableRoyalCards: RoyalCard[];  // 可供获得的皇室卡牌列表
+  currentPlayerIndex: number;    // 当前操作玩家在 players 中的索引（0 或 1）
+  winner: Player | null;         // 获胜者，游戏未结束时为 null
+  bag: TokenType[];              // 标记袋（当前未使用，未来扩展用）
 }
