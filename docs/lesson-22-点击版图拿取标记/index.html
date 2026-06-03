@@ -7,7 +7,9 @@
 <body>
   <div id="app"></div>
 
-  <script>
+  <script type="module">
+    import { takeTokens } from "./game.js";
+
     const board = [
       ["red", "blue", null, "green", "white"],
       ["black", "pearl", "gold", "red", "blue"],
@@ -25,7 +27,7 @@
     app.appendChild(title);
 
     const hint = document.createElement("p");
-    hint.textContent = "点击格子选中（最多 3 个），然后点确认";
+    hint.textContent = "点击格子选中（最多 3 个，必须相邻且在同一直线上），然后点确认";
     app.appendChild(hint);
 
     const boardDiv = document.createElement("div");
@@ -66,8 +68,8 @@
     renderBoard();
     app.appendChild(boardDiv);
 
-    const selectedInfo = document.createElement("p");
-    app.appendChild(selectedInfo);
+    const msg = document.createElement("p");
+    app.appendChild(msg);
 
     const confirmBtn = document.createElement("button");
     confirmBtn.textContent = "确认拿取";
@@ -75,19 +77,24 @@
 
     confirmBtn.addEventListener("click", function() {
       if (selected.length === 0) {
-        selectedInfo.textContent = "请先点击格子选择标记";
+        msg.textContent = "请先点击格子选择标记";
         return;
       }
 
-      const taken = [];
+      const result = takeTokens(board, selected);
+
       for (const [r, c] of selected) {
-        taken.push(board[r][c]);
         board[r][c] = null;
       }
 
       selected.length = 0;
       renderBoard();
-      selectedInfo.textContent = "拿取了: " + taken.join(", ");
+
+      let text = "拿取了: " + result.taken.join(", ");
+      if (result.opponentGetsPrivilege) {
+        text += "（对手获得 1 个特权）";
+      }
+      msg.textContent = text;
     });
   </script>
 </body>
