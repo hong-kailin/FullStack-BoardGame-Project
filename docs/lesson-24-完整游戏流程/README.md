@@ -167,7 +167,7 @@
           });
 
           app.appendChild(span);
-          app.appendChild(document.createTextNode(" "));
+          app.appendChild(document.createElement("br"));
         }
         app.appendChild(document.createElement("br"));
       }
