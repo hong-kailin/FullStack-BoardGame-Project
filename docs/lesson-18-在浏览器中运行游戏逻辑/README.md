@@ -114,7 +114,7 @@ Node.js 默认用的是 CommonJS（所以 `tsconfig.json` 里之前配了 `"modu
 每次编译都要打这么长的命令太麻烦。我们在 `package.json` 的 `scripts` 里加了一条：
 
 ```json
-"build:web": "esbuild src/browser-entry.ts --bundle --outfile=docs/lesson-18-在浏览器中运行游戏逻辑/game.js --format=esm"
+"build:web": "esbuild src/browser-entry.ts --bundle --outfile=web/game.js --format=esm"
 ```
 
 以后只需运行：
@@ -143,7 +143,7 @@ npm run build:web
   <p>打开控制台 (F12) 看测试结果</p>
 
   <script type="module">
-    import { takeTokens, getPlayerBonuses, getActualCost, canAfford } from "./game.js";
+    import { takeTokens, getPlayerBonuses, getActualCost, canAfford } from "../../web/game.js";
 
     // 测试拿取标记
     const board = [

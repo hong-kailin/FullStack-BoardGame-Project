@@ -1,4 +1,26 @@
 // src/board.ts
+function validateTakePositions(positions) {
+  if (positions.length < 1 || positions.length > 3) {
+    return "\u6BCF\u6B21\u53EA\u80FD\u62FF\u53D6 1-3 \u4E2A\u6807\u8BB0";
+  }
+  if (positions.length >= 2) {
+    const [r1, c1] = positions[0];
+    const [r2, c2] = positions[1];
+    const dr = r2 - r1;
+    const dc = c2 - c1;
+    if (!(Math.abs(dr) <= 1 && Math.abs(dc) <= 1 && (dr !== 0 || dc !== 0))) {
+      return "\u6807\u8BB0\u5FC5\u987B\u76F8\u90BB";
+    }
+    for (let i = 2; i < positions.length; i++) {
+      const [r, c] = positions[i];
+      const [pr, pc] = positions[i - 1];
+      if (r - pr !== dr || c - pc !== dc) {
+        return "\u6807\u8BB0\u5FC5\u987B\u76F8\u90BB\u4E14\u65B9\u5411\u4E00\u81F4";
+      }
+    }
+  }
+  return null;
+}
 function takeTokens(board, positions) {
   const newBoard = board.map((row) => [...row]);
   const taken = [];
@@ -196,5 +218,6 @@ export {
   getTotalPoints,
   purchaseCard,
   shuffleDeck,
-  takeTokens
+  takeTokens,
+  validateTakePositions
 };

@@ -8,7 +8,7 @@
   <div id="app"></div>
 
   <script type="module">
-    import { takeTokens, purchaseCard, canAfford, getPlayerBonuses, getActualCost, getTotalPoints, getTotalCrowns, checkWinCondition } from "./game.js";
+    import { takeTokens, validateTakePositions, purchaseCard, canAfford, getPlayerBonuses, getActualCost, getTotalPoints, getTotalCrowns, checkWinCondition } from "../../web/game.js";
 
     const board = [
       ["red", "blue", null, "green", "white"],
@@ -96,8 +96,20 @@
 
       takeBtn.addEventListener("click", function() {
         if (selected.length === 0) return;
+
+        const error = validateTakePositions(selected);
+        if (error) {
+          selected.length = 0;
+          render();
+          return;
+        }
+
         const result = takeTokens(board, selected);
         for (const [r, c] of selected) { board[r][c] = null; }
+        const player = players[currentPlayerIndex];
+        for (const token of result.taken) {
+          player.tokens[token] = (player.tokens[token] || 0) + 1;
+        }
         selected.length = 0;
         currentPlayerIndex = currentPlayerIndex === 0 ? 1 : 0;
         render();

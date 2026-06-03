@@ -30,7 +30,7 @@
   <div id="app"></div>
 
   <script type="module">
-    import { purchaseCard, canAfford, getPlayerBonuses, getActualCost } from "./game.js";
+    import { purchaseCard, canAfford, getPlayerBonuses, getActualCost } from "../../web/game.js";
 
     const pyramid = [
       [

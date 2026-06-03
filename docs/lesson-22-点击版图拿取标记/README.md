@@ -43,7 +43,7 @@ npm run build:web
   <div id="app"></div>
 
   <script type="module">
-    import { takeTokens } from "./game.js";
+    import { takeTokens } from "../../web/game.js";
 
     const board = [
       ["red", "blue", null, "green", "white"],

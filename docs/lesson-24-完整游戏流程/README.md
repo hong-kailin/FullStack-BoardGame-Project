@@ -16,7 +16,25 @@
 
 ---
 
-## 2. 动手
+## 2. game.js 从哪来？
+
+`web/game.js` 是由 `src/` 中的 TypeScript 代码编译得到的。每次修改了 `src/` 下的游戏逻辑后，需要重新编译：
+
+```bash
+npm run build:web
+```
+
+这个命令会把 `src/browser-entry.ts` 及其依赖（`board.ts`、`purchase.ts`、`game.ts` 等）打包成一个浏览器可用的 `web/game.js` 文件。
+
+所有 Web 版的 HTML 文件都通过 `../../web/game.js` 引用同一个文件，不需要每个目录单独复制。
+
+---
+
+## 3. 动手
+
+---
+
+## 4. 动手
 
 创建 `docs/lesson-24-完整游戏流程/index.html`：
 
@@ -31,7 +49,7 @@
   <div id="app"></div>
 
   <script type="module">
-    import { takeTokens, purchaseCard, canAfford, getPlayerBonuses, getActualCost, getTotalPoints, getTotalCrowns, checkWinCondition } from "./game.js";
+    import { takeTokens, validateTakePositions, purchaseCard, canAfford, getPlayerBonuses, getActualCost, getTotalPoints, getTotalCrowns, checkWinCondition } from "./game.js";
 
     const board = [
       ["red", "blue", null, "green", "white"],
@@ -122,8 +140,20 @@
 
       takeBtn.addEventListener("click", function() {
         if (selected.length === 0) return;
+
+        const error = validateTakePositions(selected);
+        if (error) {
+          selected.length = 0;
+          render();
+          return;
+        }
+
         const result = takeTokens(board, selected);
         for (const [r, c] of selected) { board[r][c] = null; }
+        const player = players[currentPlayerIndex];
+        for (const token of result.taken) {
+          player.tokens[token] = (player.tokens[token] || 0) + 1;
+        }
         selected.length = 0;
         currentPlayerIndex = currentPlayerIndex === 0 ? 1 : 0;
         render();
@@ -200,7 +230,15 @@
 
 ---
 
-## 3. 代码讲解
+## 4. 代码讲解
+
+### 引入已有函数
+
+```javascript
+import { takeTokens, validateTakePositions, purchaseCard, canAfford, getPlayerBonuses, getActualCost, getTotalPoints, getTotalCrowns, checkWinCondition } from "./game.js";
+```
+
+`game.js` 是由 `src/browser-entry.ts` 编译生成的，它导出了所有游戏逻辑函数。这样我们就不需要重新实现逻辑了。
 
 ### 游戏状态
 
@@ -223,7 +261,10 @@ currentPlayerIndex = currentPlayerIndex === 0 ? 1 : 0;
 
 ```javascript
 if (checkWinCondition(newPlayer)) {
-  // 显示胜利信息，停止渲染
+  app.innerHTML = "";
+  const win = document.createElement("h1");
+  win.textContent = newPlayer.name + " 获胜！";
+  app.appendChild(win);
   return;
 }
 ```
@@ -232,7 +273,7 @@ if (checkWinCondition(newPlayer)) {
 
 ---
 
-## 4. 你学到了什么
+## 5. 你学到了什么
 
 | 概念 | 说明 |
 |------|------|

@@ -52,6 +52,31 @@ export function getAdjacentTokens(board: (TokenType | null)[][], row: number, co
     .filter(line => line.length >= 1);
 }
 
+export function validateTakePositions(positions: [number, number][]): string | null {
+  if (positions.length < 1 || positions.length > 3) {
+    return "每次只能拿取 1-3 个标记";
+  }
+
+  if (positions.length >= 2) {
+    const [r1, c1] = positions[0];
+    const [r2, c2] = positions[1];
+    const dr = r2 - r1;
+    const dc = c2 - c1;
+    if (!(Math.abs(dr) <= 1 && Math.abs(dc) <= 1 && (dr !== 0 || dc !== 0))) {
+      return "标记必须相邻";
+    }
+    for (let i = 2; i < positions.length; i++) {
+      const [r, c] = positions[i];
+      const [pr, pc] = positions[i - 1];
+      if (r - pr !== dr || c - pc !== dc) {
+        return "标记必须相邻且方向一致";
+      }
+    }
+  }
+
+  return null;
+}
+
 export function takeTokens(
   board: (TokenType | null)[][],
   positions: [number, number][]
