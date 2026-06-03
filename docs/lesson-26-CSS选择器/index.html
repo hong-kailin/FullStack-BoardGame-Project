@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>CSS 选择器</title>
+  <style>
+    .btn {
+      padding: 10px 20px;
+      font-size: 16px;
+      border: none;
+    }
+
+    .btn-primary {
+      background-color: #e94560;
+      color: white;
+    }
+
+    .btn-secondary {
+      background-color: #555;
+      color: #eee;
+    }
+
+    #turn-info {
+      font-size: 20px;
+      color: #ffd700;
+    }
+
+    .highlight {
+      background-color: #333;
+      padding: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>璀璨宝石对决</h1>
+  <p id="turn-info">当前回合：玩家 1</p>
+
+  <div class="highlight">
+    <h2>版图</h2>
+    <p>这里放 5x5 版图</p>
+  </div>
+
+  <div class="highlight">
+    <h2>金字塔</h2>
+    <p>这里放卡牌</p>
+  </div>
+
+  <button class="btn btn-primary">拿取标记</button>
+  <button class="btn btn-secondary">跳过回合</button>
+</body>
+</html>
