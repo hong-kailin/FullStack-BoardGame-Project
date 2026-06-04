@@ -95,18 +95,21 @@ function purchaseCard(player, card, actualCost) {
     tokens: { ...player.tokens },
     cards: [...player.cards]
   };
+  const spent = {};
   for (const color of ["red", "blue", "green", "white", "black", "pearl"]) {
     let needed = actualCost[color];
     const have = newPlayer.tokens[color] || 0;
     const useFromColor = Math.min(needed, have);
     newPlayer.tokens[color] = have - useFromColor;
+    spent[color] = useFromColor;
     needed -= useFromColor;
     if (needed > 0) {
       newPlayer.tokens.gold = (newPlayer.tokens.gold || 0) - needed;
+      spent["gold"] = (spent["gold"] || 0) + needed;
     }
   }
   newPlayer.cards.push(card);
-  return newPlayer;
+  return { player: newPlayer, spent };
 }
 
 // src/game.ts
@@ -216,6 +219,7 @@ export {
   getPointsByGemColor,
   getTotalCrowns,
   getTotalPoints,
+  getTotalTokenCost,
   purchaseCard,
   shuffleDeck,
   takeTokens,

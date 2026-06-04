@@ -167,7 +167,8 @@ function processCommand(state: GameState, input: string): { state: GameState; me
       return { state, message: "宝石不足，无法购买该卡牌" };
     }
 
-    let newPlayer = purchaseCard(player, found.card, actualCost);
+    const result = purchaseCard(player, found.card, actualCost);
+    let newPlayer = result.player;
 
     const royalCard = checkRoyalCardEligibility(newPlayer, state.availableRoyalCards);
     if (royalCard) {

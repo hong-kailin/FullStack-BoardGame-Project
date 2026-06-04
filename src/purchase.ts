@@ -72,26 +72,30 @@ export function purchaseCard(
   player: Player,
   card: Card,
   actualCost: Record<GemColor | "pearl", number>
-): Player {
+): { player: Player; spent: Record<string, number> } {
   const newPlayer: Player = {
     ...player,
     tokens: { ...player.tokens },
     cards: [...player.cards]
   };
 
+  const spent: Record<string, number> = {};
+
   for (const color of ["red", "blue", "green", "white", "black", "pearl"] as const) {
     let needed = actualCost[color];
     const have = newPlayer.tokens[color] || 0;
     const useFromColor = Math.min(needed, have);
     newPlayer.tokens[color] = have - useFromColor;
+    spent[color] = useFromColor;
     needed -= useFromColor;
 
     if (needed > 0) {
       newPlayer.tokens.gold = (newPlayer.tokens.gold || 0) - needed;
+      spent["gold"] = (spent["gold"] || 0) + needed;
     }
   }
 
   newPlayer.cards.push(card);
 
-  return newPlayer;
+  return { player: newPlayer, spent };
 }
