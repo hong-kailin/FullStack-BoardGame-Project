@@ -2,24 +2,14 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "type": "node",
-      "request": "launch",
-      "name": "Debug Splendor Duel",
-      "runtimeExecutable": "tsx",
-      "args": [
-        "${file}"
-      ],
-      "cwd": "${workspaceFolder}",
-      "console": "externalTerminal",
-      "skipFiles": [
-        "<node_internals>/**"
-      ]
-    },
-    {
       "type": "chrome",
-      "name": "http://127.0.0.1:3000/docs/lesson-18-在浏览器中运行游戏逻辑/index.html",
       "request": "launch",
-      "url": "http://127.0.0.1:3000/docs/lesson-18-在浏览器中运行游戏逻辑/index.html"
+      "name": "Debug React (Vite)",
+      "url": "http://localhost:5173",
+      "webRoot": "${workspaceFolder}/src",
+      "sourceMapPathOverrides": {
+        "/__vite/*": "${webRoot}/*"
+      }
     }
   ]
 }
