@@ -1,0 +1,20 @@
+{
+  "name": "fullstack-boardgame-project",
+  "version": "1.0.0",
+  "description": "",
+  "main": "src/index.ts",
+  "scripts": {
+    "start": "tsx src/index.ts",
+    "build:web": "esbuild src/browser-entry.ts --bundle --outfile=web/game.js --format=esm",
+    "hello": "tsx docs/lesson-02-Node.js和npm/hello.ts",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^25.9.1",
+    "esbuild": "^0.28.0",
+    "tsx": "^4.22.3"
+  }
+}
