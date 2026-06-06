@@ -1,129 +1,287 @@
-# 第 36 课：给 Board 组件添加交互
+# 第 36 课：给 Board 组件添加简单交互
 
 ## 学习目标
 
-- 理解 React 中的事件处理（onClick）
-- 理解"状态提升"——子组件的事件交给父组件处理
-- 实现点击格子选中/取消选中
+- 理解 `Board()` 这个组件函数什么时候执行
+- 理解为什么需要 `state`
+- 理解 `useState` 的基本用法
+- 实现：鼠标悬停临时变色，点击宝石持久高亮，再点取消
 
-## 本课要做的事
+## 本课只做一件事
 
-上一课 Board 只能**静态展示**版图。本课让它能**交互**——点击格子选中，再点取消选中。
+上一课我们已经把版图渲染出来了。本课只加一个很小的交互：
 
-改动两个文件：
-
-1. `Board.tsx` — 接收新 props：`selectedPositions` 和 `onCellClick`
-2. `App.tsx` — 用 `useState` 管理选中的位置，传给 Board
-
-## React 的事件处理回顾
-
-在 HTML 中绑定点击事件：
-
-```html
-<button onclick="handleClick()">点击</button>
+```text
+鼠标移到宝石上 → 临时变色
+点击宝石 → 持久高亮
+再次点击同一个宝石 → 取消高亮
 ```
 
-在 React 中：
+本课不实现“拿取标记”、不处理最多选 3 个，也不把选中状态传给 `App.tsx`。
 
-```jsx
-<button onClick={handleClick}>点击</button>
-```
+当前只有 `Board` 自己需要知道“哪个格子被选中了”，所以状态先放在 `Board.tsx` 里。以后真的需要 App 知道选中结果时，再重构。
 
-区别只有两点：
+---
 
-| HTML | React |
-|------|-------|
-| `onclick`（全小写） | `onClick`（驼峰命名） |
-| `"函数名()"`（字符串） | `{函数名}`（JS 表达式） |
+## 1. 先理解：Board() 函数什么时候执行？
 
-**重要**：`onClick={handleClick}` 是传函数本身，不是调用它。不能写 `onClick={handleClick()}`，那会在渲染时就执行。
-
-## 第一步：修改 Board.tsx
+React 组件本质上是一个函数。
 
 ```typescript
-import type { TokenType } from "../game/types";
-
-interface BoardProps {
-  boardTokens: (TokenType | null)[][];
-  selectedPositions: [number, number][];
-  onCellClick: (row: number, col: number) => void;
+export default function Board({ boardTokens }: BoardProps) {
+  return (...);
 }
 ```
 
-新增了两个 props：
+所以：
 
-- **`selectedPositions`** — 当前选中的格子坐标列表，类型是 `[number, number][]`（坐标对组成的数组）
-- **`onCellClick`** — 点击格子时触发的回调函数，接收行号、列号
+```text
+Board 组件 = Board() 函数
+```
 
-然后在渲染每个格子时，判断它是否在选中列表中，加上 `selected` class，并绑定点击事件：
+React 要显示 `<Board />` 时，本质上就是执行 `Board()`，拿到它返回的 JSX，然后渲染到页面上。
+
+### 1.1 第一次执行：页面初始化时
+
+```text
+浏览器加载 index.html
+  ↓
+index.html 加载 src/main.tsx
+  ↓
+main.tsx 渲染 <App />
+  ↓
+React 执行 App()
+  ↓
+App() 返回 <Board boardTokens={state.boardTokens} />
+  ↓
+React 执行 Board()
+  ↓
+Board() 返回 25 个格子的 JSX
+  ↓
+React 把 JSX 变成真实 DOM
+```
+
+所以页面第一次显示版图时，`Board()` 会执行一次。
+
+### 1.2 后续还会执行吗？
+
+会。
+
+`Board()` 会在这些情况执行：
+
+1. **初始化渲染时**：第一次显示 `<Board />`
+2. **Board 自己的 state 更新时**：比如 `setSelectedCell(...)`
+3. **父组件 App 重新渲染时**：即使 Board 的 props 没变，默认也会重新执行
+4. **传给 Board 的 props 变化时**：比如以后 `boardTokens` 改变
+
+所以不要把组件函数理解成“只运行一次的初始化函数”。
+
+更准确地说：
+
+```text
+组件函数是一个“根据当前数据计算界面”的函数。
+React 需要重新计算界面时，就会再次执行它。
+```
+
+本课最重要的是：
+
+```text
+用户点击宝石
+  ↓
+Board 的 state 改变
+  ↓
+React 重新执行 Board()
+  ↓
+Board 根据新的 state 返回新的 JSX
+  ↓
+页面更新高亮状态
+```
+
+---
+
+## 2. 为什么需要 state？
+
+既然 `Board()` 会反复执行，那普通变量就记不住数据。
+
+如果不用 state，而是写普通变量：
 
 ```typescript
-export default function Board({ boardTokens, selectedPositions, onCellClick }: BoardProps) {
-  const isSelected = (r: number, c: number) =>
-    selectedPositions.some(([sr, sc]) => sr === r && sc === c);
-
-  return (
-    <div className="board">
-      <h3>版图</h3>
-      <div className="board-grid">
-        {boardTokens.map((row, r) =>
-          row.map((token, c) => (
-            <div
-              key={`${r}-${c}`}
-              className={`board-cell ${token ? "has-token" : "empty"} ${isSelected(r, c) ? "selected" : ""}`}
-              onClick={() => token && onCellClick(r, c)}
-            >
-              {token ? (
-                <span>{TOKEN_LABELS[token]}</span>
-              ) : (
-                <span>·</span>
-              )}
-            </div>
-          ))
-        )}
-      </div>
-    </div>
-  );
+export default function Board({ boardTokens }: BoardProps) {
+  let selectedCell = null;
+  return (...);
 }
 ```
 
-### 逐行解读
+会发生：
 
-**`isSelected` 函数**：
+```text
+用户点击格子
+  ↓
+selectedCell 被改成 [2, 3]
+  ↓
+React 重新执行 Board()
+  ↓
+let selectedCell = null 又重新开始
+  ↓
+刚才选中的信息丢了
+```
+
+因为函数每次执行时，普通变量都会重新创建。
+
+所以我们需要一种“React 帮我们记住的数据”，这就是 `state`。
+
+```text
+普通变量：函数重新执行就重新创建
+state：函数重新执行后仍然由 React 记住
+```
+
+本课要记住的是：
+
+```text
+当前哪个格子被点击选中了？
+```
+
+所以我们需要一个 state：`selectedCell`。
+
+---
+
+## 3. useState 是什么？
+
+`useState` 是 React 提供的函数，用来给组件添加 state。
+
+本课关键代码：
 
 ```typescript
-const isSelected = (r: number, c: number) =>
-  selectedPositions.some(([sr, sc]) => sr === r && sc === c);
+const [selectedCell, setSelectedCell] = useState<[number, number] | null>(null);
 ```
 
-`selectedPositions` 是一个数组，例如 `[[2, 2], [2, 3]]`。`isSelected` 检查某个格子 `(r, c)` 是否在这个数组中。
+拆开看：
 
-`.some()` 方法：只要数组中有**任意一个**元素满足条件就返回 true。类比 Python 的 `any()`。
+| 部分 | 含义 |
+|------|------|
+| `selectedCell` | 当前选中的格子 |
+| `setSelectedCell` | 修改选中格子的函数 |
+| `[number, number]` | 一个坐标，例如 `[2, 3]` |
+| `null` | 没有选中任何格子 |
+| 最后的 `(null)` | 初始值 |
 
-**`onClick` 绑定**：
+### 3.1 useState 返回什么？
 
-```jsx
-onClick={() => token && onCellClick(r, c)}
+```typescript
+const [count, setCount] = useState(0);
 ```
 
-这里做了两件事：
+`useState(0)` 返回一个数组：
 
-1. `token && ...` — 只有有标记的格子才能被点击（空格子点不了）
-2. `onCellClick(r, c)` — 调用父组件传进来的回调，告诉 App"第 r 行第 c 列的格子被点了"
-
-**className 动态拼接**：
-
-```jsx
-className={`board-cell ${token ? "has-token" : "empty"} ${isSelected(r, c) ? "selected" : ""}`}
+```text
+[当前状态值, 修改状态的函数]
 ```
 
-`${...}` 模板字符串拼接多个 class：
+等价于：
 
-- 所有格子都有 `board-cell`
-- 有标记的格子加 `has-token`，空格的加 `empty`
-- 选中的格子额外加 `selected`
+```typescript
+const result = useState(0);
+const count = result[0];
+const setCount = result[1];
+```
 
-## 第二步：修改 App.tsx
+### 3.2 selectedCell 的两种状态
+
+```typescript
+null      // 没有选中任何格子
+[2, 3]    // 选中了第 2 行第 3 列
+```
+
+### 3.3 为什么不能直接赋值？
+
+不能这样：
+
+```typescript
+selectedCell = [2, 3];
+```
+
+因为 React 不知道你偷偷改了变量。
+
+必须这样：
+
+```typescript
+setSelectedCell([2, 3]);
+```
+
+`setSelectedCell` 会做两件事：
+
+1. 更新 React 记住的 state
+2. 通知 React 重新执行组件函数，更新页面
+
+---
+
+## 4. 本课的状态变化流程
+
+```text
+初始：selectedCell = null
+  ↓
+点击 [2, 3]
+  ↓
+setSelectedCell([2, 3])
+  ↓
+React 重新执行 Board()
+  ↓
+selectedCell = [2, 3]
+  ↓
+第 2 行第 3 列加上 selected class
+```
+
+再次点击同一个格子：
+
+```text
+点击 [2, 3]
+  ↓
+setSelectedCell(null)
+  ↓
+React 重新执行 Board()
+  ↓
+selectedCell = null
+  ↓
+没有格子被选中，高亮消失
+```
+
+---
+
+## 5. 当前代码组织结构
+
+```text
+App.tsx
+├── 创建游戏初始状态 state
+└── 把 state.boardTokens 传给 Board
+
+Board.tsx
+├── 接收 boardTokens
+├── 用 useState 记住 selectedCell
+├── handleCellClick(row, col) 修改 selectedCell
+├── isSelected(row, col) 判断格子是否被选中
+└── 渲染 25 个格子
+    ├── 鼠标 hover 时靠 CSS 临时变色
+    └── selectedCell 对应的格子加 selected class，持久高亮
+
+App.css
+├── .board-cell.has-token:hover  鼠标悬停样式
+└── .board-cell.selected         点击选中后的持久样式
+```
+
+为什么状态不放在 `App.tsx`？
+
+```text
+只有 Board 用到 selectedCell
+所以 selectedCell 放在 Board 里
+```
+
+以后实现“拿取标记”按钮时，如果 App 也需要知道选中了哪些格子，再把状态提升到 App。
+
+---
+
+## 6. App.tsx 代码
+
+`App.tsx` 保持简单，只负责把版图数据传给 `Board`。
 
 ```typescript
 import { useState } from "react";
@@ -133,93 +291,125 @@ import "./App.css";
 
 export default function App() {
   const [state] = useState(createInitialState());
-  const [selectedPositions, setSelectedPositions] = useState<[number, number][]>([]);
-
-  const handleCellClick = (row: number, col: number) => {
-    const already = selectedPositions.find(([r, c]) => r === row && c === col);
-    if (already) {
-      setSelectedPositions(selectedPositions.filter(([r, c]) => r !== row || c !== col));
-    } else {
-      if (selectedPositions.length >= 3) return;
-      setSelectedPositions([...selectedPositions, [row, col] as [number, number]]);
-    }
-  };
 
   return (
     <div className="app">
       <h1>璀璨宝石对决</h1>
-      <Board
-        boardTokens={state.boardTokens}
-        selectedPositions={selectedPositions}
-        onCellClick={handleCellClick}
-      />
+      <Board boardTokens={state.boardTokens} />
     </div>
   );
 }
 ```
 
-### 逐行解读
+---
 
-**新增 state**：
+## 7. Board.tsx 代码
 
 ```typescript
-const [selectedPositions, setSelectedPositions] = useState<[number, number][]>([]);
+import { useState } from "react";
+import type { TokenType } from "../game/types";
+
+interface BoardProps {
+  boardTokens: (TokenType | null)[][];
+}
+
+const TOKEN_LABELS: Record<string, string> = {
+  red: "🔴", blue: "🔵", green: "🟢",
+  white: "⚪", black: "⚫",
+  pearl: "🦪", gold: "🟡",
+};
+
+export default function Board({ boardTokens }: BoardProps) {
+  const [selectedCell, setSelectedCell] = useState<[number, number] | null>(null);
+
+  const handleCellClick = (row: number, col: number) => {
+    const isSameCell = selectedCell?.[0] === row && selectedCell?.[1] === col;
+    setSelectedCell(isSameCell ? null : [row, col]);
+  };
+
+  const isSelected = (row: number, col: number) =>
+    selectedCell?.[0] === row && selectedCell?.[1] === col;
+
+  return (
+    <div className="board">
+      <h3>版图</h3>
+      <div className="board-grid">
+        {boardTokens.map((row, rowIndex) =>
+          row.map((token, colIndex) => (
+            <div
+              key={`${rowIndex}-${colIndex}`}
+              className={`board-cell ${token ? "has-token" : "empty"} ${isSelected(rowIndex, colIndex) ? "selected" : ""}`}
+              onClick={() => token && handleCellClick(rowIndex, colIndex)}
+            >
+              {token ? <span>{TOKEN_LABELS[token]}</span> : <span>·</span>}
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
 ```
 
-- `selectedPositions` — 当前选中的格子坐标数组，初始为空数组 `[]`
-- `setSelectedPositions` — 更新这个状态的函数
+### 代码要点
 
-**handleCellClick**：
+#### `handleCellClick`
 
 ```typescript
-const handleCellClick = (row: number, col: number) => {
-  // 1. 检查这个格子是否已经选中
-  const already = selectedPositions.find(([r, c]) => r === row && c === col);
-  if (already) {
-    // 2. 已选中 → 取消选中（从数组中移除）
-    setSelectedPositions(
-      selectedPositions.filter(([r, c]) => r !== row || c !== col)
-    );
-  } else {
-    // 3. 未选中 → 检查是否已选 3 个（最多选 3 个）
-    if (selectedPositions.length >= 3) return;
-    // 4. 添加选中
-    setSelectedPositions([...selectedPositions, [row, col] as [number, number]]);
-  }
-};
+const isSameCell = selectedCell?.[0] === row && selectedCell?.[1] === col;
+setSelectedCell(isSameCell ? null : [row, col]);
 ```
 
 逻辑：
 
-- 如果点击的格子已经在选中列表里 → 移除它（取消选中）
-- 如果不在列表里 → 如果没满 3 个就添加进去（最多选 3 个）
-- `filter()` 创建一个新数组，排除掉被点击的格子
-- `[...selectedPositions, ...]` 是数组展开，创建一个新数组，在原数组末尾追加新元素
-
-**数据流**：
-
-```
-用户点击格子
-  → Board 组件触发 onClick={() => onCellClick(r, c)}
-    → App 的 handleCellClick 执行
-      → setSelectedPositions 更新状态
-        → React 重新渲染 App
-          → 新的 selectedPositions 传给 Board
-            → Board 重新渲染，选中格子显示 selected class
+```text
+如果点击的是已选中的格子 → 取消选中
+否则 → 选中新格子
 ```
 
-## 第三步：添加选中样式
+`selectedCell?.[0]` 是可选链：如果 `selectedCell` 是 `null`，不会报错。
 
-在 `App.css` 中添加选中高亮的样式：
+#### `isSelected`
+
+```typescript
+const isSelected = (row: number, col: number) =>
+  selectedCell?.[0] === row && selectedCell?.[1] === col;
+```
+
+判断某个格子是不是当前被选中的格子。
+
+#### `className`
+
+```typescript
+className={`board-cell ${token ? "has-token" : "empty"} ${isSelected(rowIndex, colIndex) ? "selected" : ""}`}
+```
+
+最终可能生成：
+
+```text
+board-cell has-token selected
+```
+
+CSS 会让带有 `selected` 的格子持久高亮。
+
+#### `onClick`
+
+```typescript
+onClick={() => token && handleCellClick(rowIndex, colIndex)}
+```
+
+只有有宝石的格子才能点击。空格子的 `token` 是 `null`，不会执行点击逻辑。
+
+---
+
+## 8. CSS：hover 和 selected 的区别
 
 ```css
-.board-cell.has-token {
-  cursor: pointer;
-}
 .board-cell.has-token:hover {
   border-color: #aa3bff;
   background: rgba(170, 59, 255, 0.1);
 }
+
 .board-cell.selected {
   border-color: #aa3bff;
   background: rgba(170, 59, 255, 0.1);
@@ -227,32 +417,38 @@ const handleCellClick = (row: number, col: number) => {
 }
 ```
 
-- `has-token` 的格子鼠标变成手指（pointer）
-- `hover` 时边框和背景变色，提示"这个格子可以点"
-- `selected` 时额外加阴影，明显区别于其他格子
+| 样式 | 触发方式 | 是否持久 |
+|------|----------|----------|
+| `:hover` | 鼠标放上去 | 不持久，鼠标移开就消失 |
+| `.selected` | 点击后 state 改变 | 持久，直到再次点击取消 |
+
+---
 
 ## 本课产出
 
-点击版图上的标记格子：
+运行：
 
-- 第一次点击 → 格子高亮（选中）
-- 再次点击同一个格子 → 高亮消失（取消选中）
-- 最多同时选中 3 个
+```bash
+npm run dev
+```
+
+你应该看到：
+
+1. 鼠标放到有宝石的格子上，格子临时变色
+2. 点击一个宝石格子，格子持续高亮
+3. 再点同一个格子，高亮取消
+4. 点另一个宝石格子，高亮移动到新格子
 
 ## 思考题（附答案）
 
-1. **为什么 `onClick` 里要写 `() => onCellClick(r, c)`，不能直接写 `onClick={onCellClick(r, c)}`？**
+1. **为什么本课把 `selectedCell` 放在 Board 里？**
 
-   因为 `onClick` 需要的是一个**函数**，不是函数的返回值。
+   因为当前只有 Board 自己需要用它。代码只服务当前目标，不提前复杂化。
 
-   - `onClick={onCellClick}` ✅ — 传函数本身，点击时执行
-   - `onClick={onCellClick(r, c)}` ❌ — 渲染时立刻执行，返回值赋给 onClick
-   - `onClick={() => onCellClick(r, c)}` ✅ — 箭头包一层，点击时才执行
+2. **什么时候需要把 selectedCell 移到 App？**
 
-   类比：就像 `addEventListener("click", handleClick)` 不能写成 `addEventListener("click", handleClick())`。
+   当 App 或其他组件也需要知道选中的格子时，比如以后实现“拿取标记”按钮。
 
-2. **为什么 `selectedPositions` 要存在 App 里，不直接存在 Board 里？**
+3. **hover 和 selected 有什么区别？**
 
-   因为将来"拿取标记"按钮在 App 中。如果选中状态存在 Board 里，App 拿不到数据，没法知道用户选了哪些格子。
-
-   这就是 React 的**状态提升**原则：把状态放在需要它的最近公共父组件中。
+   `hover` 是 CSS 临时状态；`selected` 是 React state 控制的持久状态。

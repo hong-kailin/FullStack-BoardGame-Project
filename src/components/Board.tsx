@@ -1,9 +1,8 @@
+import { useState } from "react";
 import type { TokenType } from "../game/types";
 
 interface BoardProps {
   boardTokens: (TokenType | null)[][];
-  selectedPositions: [number, number][];
-  onCellClick: (row: number, col: number) => void;
 }
 
 const TOKEN_LABELS: Record<string, string> = {
@@ -12,20 +11,27 @@ const TOKEN_LABELS: Record<string, string> = {
   pearl: "🦪", gold: "🟡",
 };
 
-export default function Board({ boardTokens, selectedPositions, onCellClick }: BoardProps) {
-  const isSelected = (r: number, c: number) =>
-    selectedPositions.some(([sr, sc]) => sr === r && sc === c);
+export default function Board({ boardTokens }: BoardProps) {
+  const [selectedCell, setSelectedCell] = useState<[number, number] | null>(null);
+
+  const handleCellClick = (row: number, col: number) => {
+    const isSameCell = selectedCell?.[0] === row && selectedCell?.[1] === col;
+    setSelectedCell(isSameCell ? null : [row, col]);
+  };
+
+  const isSelected = (row: number, col: number) =>
+    selectedCell?.[0] === row && selectedCell?.[1] === col;
 
   return (
     <div className="board">
       <h3>版图</h3>
       <div className="board-grid">
-        {boardTokens.map((row, r) =>
-          row.map((token, c) => (
+        {boardTokens.map((row, rowIndex) =>
+          row.map((token, colIndex) => (
             <div
-              key={`${r}-${c}`}
-              className={`board-cell ${token ? "has-token" : "empty"} ${isSelected(r, c) ? "selected" : ""}`}
-              onClick={() => token && onCellClick(r, c)}
+              key={`${rowIndex}-${colIndex}`}
+              className={`board-cell ${token ? "has-token" : "empty"} ${isSelected(rowIndex, colIndex) ? "selected" : ""}`}
+              onClick={() => token && handleCellClick(rowIndex, colIndex)}
             >
               {token ? (
                 <span>{TOKEN_LABELS[token]}</span>
