@@ -1,4 +1,4 @@
-import { Card, Player, GemColor } from "./types";
+import type { Card, Player, GemColor } from "./types";
 
 export function getPlayerBonuses(player: Player): Record<GemColor, number> {
   const bonuses: Record<GemColor, number> = {

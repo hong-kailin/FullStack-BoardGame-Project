@@ -2,6 +2,8 @@ import type { TokenType } from "../game/types";
 
 interface BoardProps {
   boardTokens: (TokenType | null)[][];
+  selectedPositions: [number, number][];
+  onCellClick: (row: number, col: number) => void;
 }
 
 const TOKEN_LABELS: Record<string, string> = {
@@ -10,7 +12,10 @@ const TOKEN_LABELS: Record<string, string> = {
   pearl: "🦪", gold: "🟡",
 };
 
-export default function Board({ boardTokens }: BoardProps) {
+export default function Board({ boardTokens, selectedPositions, onCellClick }: BoardProps) {
+  const isSelected = (r: number, c: number) =>
+    selectedPositions.some(([sr, sc]) => sr === r && sc === c);
+
   return (
     <div className="board">
       <h3>版图</h3>
@@ -19,7 +24,8 @@ export default function Board({ boardTokens }: BoardProps) {
           row.map((token, c) => (
             <div
               key={`${r}-${c}`}
-              className={`board-cell ${token ? "has-token" : "empty"}`}
+              className={`board-cell ${token ? "has-token" : "empty"} ${isSelected(r, c) ? "selected" : ""}`}
+              onClick={() => token && onCellClick(r, c)}
             >
               {token ? (
                 <span>{TOKEN_LABELS[token]}</span>

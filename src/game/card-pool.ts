@@ -1,4 +1,4 @@
-import { Card } from "./types";
+import type { Card } from "./types";
 
 const level1Cards: Card[] = [
   { id: 1, level: 1, gem: "red", points: 1, crowns: 0, bonusCount: 1, cost: { red: 0, blue: 0, green: 0, white: 0, black: 0, pearl: 3 } },

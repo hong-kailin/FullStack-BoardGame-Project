@@ -31,6 +31,21 @@
   background: #f4f3ec;
 }
 
+.board-cell.has-token {
+  cursor: pointer;
+}
+
+.board-cell.has-token:hover {
+  border-color: #aa3bff;
+  background: rgba(170, 59, 255, 0.1);
+}
+
+.board-cell.selected {
+  border-color: #aa3bff;
+  background: rgba(170, 59, 255, 0.1);
+  box-shadow: 0 0 8px rgba(170, 59, 255, 0.5);
+}
+
 .board-cell.empty {
   background: transparent;
   border-color: transparent;

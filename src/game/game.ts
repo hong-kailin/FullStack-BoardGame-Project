@@ -1,4 +1,4 @@
-import { Player, GameState, RoyalCard, GemColor } from "./types";
+import type { Player, GameState, RoyalCard, GemColor } from "./types";
 
 export function getTotalPoints(player: Player): number {
   let total = 0;

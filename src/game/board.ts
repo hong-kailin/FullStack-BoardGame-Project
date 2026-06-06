@@ -1,4 +1,4 @@
-import { TokenType } from "./types";
+import type { TokenType } from "./types";
 
 const BOARD_SIZE = 5;
 
