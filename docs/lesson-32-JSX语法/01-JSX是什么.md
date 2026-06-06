@@ -48,17 +48,6 @@ squares = [x * x for x in range(10)]
 
 功能完全一样，但第二种写法更简洁、更直观。JSX 也是同样的道理。
 
-## 4. JSX 不是模板引擎
-
-你可能听说过其他语言有"模板引擎"（比如 Python 的 Jinja2、PHP 的 Blade）。它们是在 HTML 中嵌入逻辑：
-
-```html
-<!-- 模板引擎：在 HTML 中嵌入特殊语法 -->
-<h1>{{ title }}</h1>
-```
-
-JSX 不一样。它就是在 JavaScript 中写标签，没有"模板"和"代码"的区分——标签就是代码，代码就是标签。
-
-## 5. 一句话总结
+## 4. 一句话总结
 
 **JSX = 在 JS 文件中写 HTML 标签，是 `React.createElement` 的语法糖。**
