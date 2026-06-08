@@ -4,6 +4,7 @@ import Pyramid from "./components/Pyramid";
 import PlayerInfo from "./components/PlayerInfo";
 import { createInitialState, handleTakeTokens, handleBuyCard, handlePass } from "./game/gameState";
 import { validateCellSelection } from "./game/board";
+import { getPlayerBonuses, getActualCost, canAfford } from "./game/purchase";
 import "./App.css";
 
 export default function App() {
@@ -53,6 +54,20 @@ export default function App() {
     setSelectedCells([]);
   };
 
+  const player = state.players[state.currentPlayerIndex];
+  const bonuses = getPlayerBonuses(player);
+
+  const canAffordCard = (cardId: number) => {
+    for (const level of state.pyramid) {
+      const card = level.find(c => c.id === cardId);
+      if (card) {
+        const actualCost = getActualCost(card, bonuses);
+        return canAfford(player, actualCost);
+      }
+    }
+    return false;
+  };
+
   return (
     <div className="app">
       <h1>璀璨宝石对决</h1>
@@ -71,7 +86,7 @@ export default function App() {
             </button>
           )}
         </div>
-        <Pyramid pyramid={state.pyramid} onBuyCard={handleBuy} />
+        <Pyramid pyramid={state.pyramid} onBuyCard={handleBuy} canAffordCard={canAffordCard} />
       </div>
       <div className="players">
         <PlayerInfo player={state.players[0]} isCurrentPlayer={state.currentPlayerIndex === 0} />

@@ -141,6 +141,14 @@
   box-shadow: rgba(0, 0, 0, 0.1) 0 4px 8px;
 }
 
+.pyramid-card.affordable {
+  box-shadow: 0 0 6px rgba(46, 204, 113, 0.4);
+}
+
+.pyramid-card.unaffordable {
+  opacity: 0.6;
+}
+
 .card-gem {
   font-weight: bold;
   font-size: 16px;

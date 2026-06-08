@@ -3,6 +3,7 @@ import type { Card } from "../game/types";
 interface PyramidProps {
   pyramid: Card[][];
   onBuyCard: (cardId: number) => void;
+  canAffordCard: (cardId: number) => boolean;
 }
 
 const GEM_COLORS: Record<string, string> = {
@@ -23,7 +24,7 @@ function formatCost(cost: Card["cost"]): string {
     .join(" ");
 }
 
-export default function Pyramid({ pyramid, onBuyCard }: PyramidProps) {
+export default function Pyramid({ pyramid, onBuyCard, canAffordCard }: PyramidProps) {
   const reversed = [...pyramid].reverse();
 
   return (
@@ -32,10 +33,12 @@ export default function Pyramid({ pyramid, onBuyCard }: PyramidProps) {
       {reversed.map((levelCards, i) => (
         <div key={i} className="pyramid-level">
           <div className="pyramid-cards">
-            {levelCards.map((card) => (
+            {levelCards.map((card) => {
+              const affordable = canAffordCard(card.id);
+              return (
               <div
                 key={card.id}
-                className="pyramid-card"
+                className={`pyramid-card ${affordable ? "affordable" : "unaffordable"}`}
                 style={{ borderColor: GEM_COLORS[card.gem] || "#999" }}
                 onClick={() => onBuyCard(card.id)}
               >
@@ -46,7 +49,8 @@ export default function Pyramid({ pyramid, onBuyCard }: PyramidProps) {
                 {card.crowns > 0 && <div className="card-crowns">👑x{card.crowns}</div>}
                 <div className="card-cost">{formatCost(card.cost)}</div>
               </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       ))}
