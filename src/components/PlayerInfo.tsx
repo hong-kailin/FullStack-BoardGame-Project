@@ -1,10 +1,11 @@
 import type { Player, Card } from "../game/types";
-import { getPlayerBonuses } from "../game/purchase";
+import { getPlayerBonuses, getActualCost } from "../game/purchase";
 import { getTotalPoints, getTotalCrowns } from "../game/game";
 
 interface PlayerInfoProps {
   player: Player;
   isCurrentPlayer: boolean;
+  onBuyReserved?: (cardId: number) => void;
 }
 
 const TOKEN_LABELS: Record<string, string> = {
@@ -23,7 +24,14 @@ const GEM_COLORS: Record<string, string> = {
   white: "#ecf0f1", black: "#2c3e50",
 };
 
-export default function PlayerInfo({ player, isCurrentPlayer }: PlayerInfoProps) {
+function formatCost(cost: Card["cost"]): string {
+  return Object.entries(cost)
+    .filter(([, amount]) => amount > 0)
+    .map(([color, amount]) => `${GEM_EMOJI[color] || color}x${amount}`)
+    .join(" ");
+}
+
+export default function PlayerInfo({ player, isCurrentPlayer, onBuyReserved }: PlayerInfoProps) {
   const bonuses = getPlayerBonuses(player);
 
   const tokenDisplay = Object.entries(player.tokens)
@@ -53,6 +61,29 @@ export default function PlayerInfo({ player, isCurrentPlayer }: PlayerInfoProps)
         <span>卡牌: {player.cards.length} 张</span>
       </div>
       <div className="player-bonuses">奖励: {bonusDisplay || "无"}</div>
+      {player.reservedCards.length > 0 && (
+        <div className="reserved-cards">
+          <div className="reserved-label">保留卡牌:</div>
+          <div className="reserved-list">
+            {player.reservedCards.map((card) => (
+              <div
+                key={card.id}
+                className="reserved-card"
+                style={{ borderColor: GEM_COLORS[card.gem] || "#999" }}
+                onClick={() => onBuyReserved?.(card.id)}
+                title="点击购买"
+              >
+                <div className="reserved-gem" style={{ color: GEM_COLORS[card.gem] }}>
+                  {card.gem}
+                </div>
+                <div className="reserved-points">{card.points}分</div>
+                {card.crowns > 0 && <div className="reserved-crowns">👑x{card.crowns}</div>}
+                <div className="reserved-cost">{formatCost(card.cost)}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
       {player.cards.length > 0 && (
         <div className="owned-cards">
           {(["red", "blue", "green", "white", "black"] as const).map((color) =>

@@ -101,18 +101,28 @@ export function handleBuyCard(
   const player = state.players[state.currentPlayerIndex];
   const opponentIndex = state.currentPlayerIndex === 0 ? 1 : 0;
 
-  const found = findCardInPyramid(state.pyramid, cardId);
-  if (!found) return { state, message: `卡牌 ID ${cardId} 不在金字塔中` };
+  const fromPyramid = findCardInPyramid(state.pyramid, cardId);
+  const fromReserved = player.reservedCards.find(c => c.id === cardId);
+  const card = fromPyramid?.card || fromReserved;
+
+  if (!card) return { state, message: `卡牌 ID ${cardId} 不存在` };
 
   const bonuses = getPlayerBonuses(player);
-  const actualCost = getActualCost(found.card, bonuses);
+  const actualCost = getActualCost(card, bonuses);
 
   if (!canAfford(player, actualCost)) {
     return { state, message: "宝石不足，无法购买该卡牌" };
   }
 
-  const result = purchaseCard(player, found.card, actualCost);
+  const result = purchaseCard(player, card, actualCost);
   let newPlayer = result.player;
+
+  if (fromReserved) {
+    newPlayer = {
+      ...newPlayer,
+      reservedCards: newPlayer.reservedCards.filter(c => c.id !== cardId)
+    };
+  }
 
   const royalCard = checkRoyalCardEligibility(newPlayer, state.availableRoyalCards);
   if (royalCard) {
@@ -126,7 +136,10 @@ export function handleBuyCard(
     };
   }
 
-  const newPyramid = state.pyramid.map(level => level.filter(c => c.id !== cardId));
+  const newPyramid = fromPyramid
+    ? state.pyramid.map(level => level.filter(c => c.id !== cardId))
+    : state.pyramid;
+
   const newPlayers = [...state.players] as [Player, Player];
   newPlayers[state.currentPlayerIndex] = newPlayer;
 
@@ -147,5 +160,51 @@ export function handlePass(state: GameState): { state: GameState; message: strin
   return {
     state: { ...state, currentPlayerIndex: opponentIndex },
     message: `${player.name} 跳过了回合`
+  };
+}
+
+export function handleTakeGold(
+  state: GameState,
+  position: [number, number],
+  cardId: number
+): { state: GameState; message: string } {
+  const player = state.players[state.currentPlayerIndex];
+  const opponentIndex = state.currentPlayerIndex === 0 ? 1 : 0;
+
+  const newBoard = state.boardTokens.map(row => [...row]);
+  newBoard[position[0]][position[1]] = null;
+
+  let newPlayer = { ...player, tokens: { ...player.tokens } };
+  newPlayer.tokens.gold = (newPlayer.tokens.gold || 0) + 1;
+
+  const found = findCardInPyramid(state.pyramid, cardId);
+  if (!found) return { state, message: "卡牌不存在" };
+
+  if (newPlayer.reservedCards.length >= 3) {
+    return { state, message: "最多只能保留 3 张卡牌" };
+  }
+
+  newPlayer = {
+    ...newPlayer,
+    reservedCards: [...newPlayer.reservedCards, found.card]
+  };
+
+  const newPyramid = state.pyramid.map(level =>
+    level.filter(c => c.id !== cardId)
+  );
+
+  const newPlayers: [Player, Player] = state.currentPlayerIndex === 0
+    ? [newPlayer, state.players[1]]
+    : [state.players[0], newPlayer];
+
+  return {
+    state: {
+      ...state,
+      players: newPlayers,
+      boardTokens: newBoard,
+      pyramid: newPyramid,
+      currentPlayerIndex: opponentIndex
+    },
+    message: `${player.name} 拿取了黄金并保留了卡牌`
   };
 }

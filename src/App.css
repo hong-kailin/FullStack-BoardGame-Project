@@ -237,3 +237,56 @@
   display: flex;
   gap: 3px;
 }
+
+.reserved-cards {
+  margin-top: 6px;
+}
+
+.reserved-label {
+  font-size: 12px;
+  color: #f39c12;
+  margin-bottom: 4px;
+}
+
+.reserved-list {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.reserved-card {
+  border: 2px solid;
+  border-radius: 6px;
+  padding: 6px;
+  width: 80px;
+  font-size: 11px;
+  background: #f4f3ec;
+  cursor: pointer;
+  text-align: center;
+  transition: transform 0.15s;
+}
+
+.reserved-card:hover {
+  transform: translateY(-2px);
+  box-shadow: rgba(0, 0, 0, 0.1) 0 4px 8px;
+}
+
+.reserved-gem {
+  font-weight: bold;
+  font-size: 14px;
+  text-transform: uppercase;
+}
+
+.reserved-points {
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.reserved-crowns {
+  font-size: 12px;
+}
+
+.reserved-cost {
+  font-size: 10px;
+  margin-top: 2px;
+}
