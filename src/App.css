@@ -55,3 +55,38 @@
   color: #ccc;
   font-size: 14px;
 }
+
+.game-layout {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+.pyramid h3 {
+  margin: 0 0 8px;
+  font-size: 16px;
+}
+
+.pyramid-level {
+  margin-bottom: 12px;
+}
+
+.pyramid-level h4 {
+  margin: 0 0 6px;
+  font-size: 14px;
+}
+
+.pyramid-cards {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pyramid-card {
+  border: 2px solid #e5e4e7;
+  border-radius: 6px;
+  background: #f4f3ec;
+  padding: 8px;
+  min-width: 90px;
+  font-size: 13px;
+}
