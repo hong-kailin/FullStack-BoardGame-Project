@@ -77,6 +77,35 @@ export function validateTakePositions(positions: [number, number][]): string | n
   return null;
 }
 
+export function validateCellSelection(
+  boardTokens: (TokenType | null)[][],
+  selectedCells: [number, number][],
+  newRow: number,
+  newCol: number
+): string | null {
+  const clickedToken = boardTokens[newRow][newCol];
+
+  const hasGold = selectedCells.some(([r, c]) => boardTokens[r][c] === "gold");
+
+  if (clickedToken === "gold") {
+    if (selectedCells.length > 0) {
+      return "黄金只能单独拿取";
+    }
+    return null;
+  }
+
+  if (hasGold) {
+    return "黄金不能和其他宝石一起拿取";
+  }
+
+  if (selectedCells.length >= 3) {
+    return "最多只能拿取 3 个标记";
+  }
+
+  const newSelected: [number, number][] = [...selectedCells, [newRow, newCol]];
+  return validateTakePositions(newSelected);
+}
+
 export function takeTokens(
   board: (TokenType | null)[][],
   positions: [number, number][]
