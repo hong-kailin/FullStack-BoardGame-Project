@@ -90,3 +90,37 @@
   min-width: 90px;
   font-size: 13px;
 }
+
+.players {
+  display: flex;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.player-info {
+  flex: 1;
+  border: 2px solid #e5e4e7;
+  border-radius: 6px;
+  padding: 12px;
+}
+
+.player-info h3 {
+  margin: 0 0 6px;
+  font-size: 16px;
+}
+
+.player-tokens {
+  font-size: 14px;
+  margin-bottom: 6px;
+}
+
+.player-stats {
+  display: flex;
+  gap: 12px;
+  font-size: 14px;
+}
+
+.player-bonuses {
+  font-size: 13px;
+  margin-top: 4px;
+}
