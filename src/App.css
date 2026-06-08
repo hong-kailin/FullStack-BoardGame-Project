@@ -150,6 +150,11 @@
   padding: 12px;
 }
 
+.player-info.current {
+  border-color: #aa3bff;
+  background: rgba(170, 59, 255, 0.1);
+}
+
 .player-info h3 {
   margin: 0 0 6px;
   font-size: 16px;

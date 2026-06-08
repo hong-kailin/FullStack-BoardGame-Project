@@ -4,6 +4,7 @@ import { getTotalPoints, getTotalCrowns } from "../game/game";
 
 interface PlayerInfoProps {
   player: Player;
+  isCurrentPlayer: boolean;
 }
 
 const TOKEN_LABELS: Record<string, string> = {
@@ -12,7 +13,7 @@ const TOKEN_LABELS: Record<string, string> = {
   pearl: "🦪", gold: "🟡",
 };
 
-export default function PlayerInfo({ player }: PlayerInfoProps) {
+export default function PlayerInfo({ player, isCurrentPlayer }: PlayerInfoProps) {
   const bonuses = getPlayerBonuses(player);
 
   const tokenDisplay = Object.entries(player.tokens)
@@ -26,8 +27,8 @@ export default function PlayerInfo({ player }: PlayerInfoProps) {
     .join(" ");
 
   return (
-    <div className="player-info">
-      <h3>{player.name}</h3>
+    <div className={`player-info ${isCurrentPlayer ? "current" : ""}`}>
+      <h3>{isCurrentPlayer ? "▶ " : ""}{player.name}</h3>
       <div className="player-tokens">{tokenDisplay || "无"}</div>
       <div className="player-stats">
         <span>声望: {getTotalPoints(player)}</span>

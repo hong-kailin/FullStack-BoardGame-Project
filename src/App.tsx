@@ -65,7 +65,7 @@ export default function App() {
             onCellClick={handleCellClick}
           />
           {error && <div className="board-error">{error}</div>}
-          {selectedCells.length > 0 && (
+          {!state.winner && selectedCells.length > 0 && (
             <button className="btn-take" onClick={handleTake}>
               拿取标记 ({selectedCells.length} 个)
             </button>
@@ -74,12 +74,14 @@ export default function App() {
         <Pyramid pyramid={state.pyramid} onBuyCard={handleBuy} />
       </div>
       <div className="players">
-        <PlayerInfo player={state.players[0]} />
-        <PlayerInfo player={state.players[1]} />
+        <PlayerInfo player={state.players[0]} isCurrentPlayer={state.currentPlayerIndex === 0} />
+        <PlayerInfo player={state.players[1]} isCurrentPlayer={state.currentPlayerIndex === 1} />
       </div>
-      <button className="btn-pass" onClick={handleSkip}>
-        跳过回合
-      </button>
+      {!state.winner && (
+        <button className="btn-pass" onClick={handleSkip}>
+          跳过回合
+        </button>
+      )}
     </div>
   );
 }
