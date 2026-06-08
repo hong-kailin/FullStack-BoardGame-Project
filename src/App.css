@@ -207,3 +207,33 @@
   font-size: 13px;
   margin-top: 4px;
 }
+
+.owned-cards {
+  margin-top: 8px;
+}
+
+.color-group {
+  margin-bottom: 6px;
+}
+
+.color-group-header {
+  font-size: 13px;
+  font-weight: bold;
+  margin-bottom: 3px;
+}
+
+.color-group-cards {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.owned-card {
+  border: 1px solid;
+  border-radius: 4px;
+  padding: 2px 5px;
+  font-size: 11px;
+  background: #f4f3ec;
+  display: flex;
+  gap: 3px;
+}
