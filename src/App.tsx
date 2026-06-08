@@ -2,7 +2,7 @@ import { useState } from "react";
 import Board from "./components/Board";
 import Pyramid from "./components/Pyramid";
 import PlayerInfo from "./components/PlayerInfo";
-import { createInitialState, handleTakeTokens, handleBuyCard } from "./game/gameState";
+import { createInitialState, handleTakeTokens, handleBuyCard, handlePass } from "./game/gameState";
 import { validateCellSelection } from "./game/board";
 import "./App.css";
 
@@ -46,6 +46,13 @@ export default function App() {
     setMessage(result.message);
   };
 
+  const handleSkip = () => {
+    const result = handlePass(state);
+    setState(result.state);
+    setMessage(result.message);
+    setSelectedCells([]);
+  };
+
   return (
     <div className="app">
       <h1>璀璨宝石对决</h1>
@@ -70,6 +77,9 @@ export default function App() {
         <PlayerInfo player={state.players[0]} />
         <PlayerInfo player={state.players[1]} />
       </div>
+      <button className="btn-pass" onClick={handleSkip}>
+        跳过回合
+      </button>
     </div>
   );
 }
