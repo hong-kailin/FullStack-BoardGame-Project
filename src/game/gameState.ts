@@ -16,6 +16,10 @@ export function createInitialState(): GameState {
   const shuffledTokens = shuffleDeck(allTokens);
   const board = createBoard(shuffledTokens);
 
+  const deck1 = shuffleDeck(getLevelDeck(1));
+  const deck2 = shuffleDeck(getLevelDeck(2));
+  const deck3 = shuffleDeck(getLevelDeck(3));
+
   return {
     players: [
       {
@@ -39,15 +43,37 @@ export function createInitialState(): GameState {
     ],
     boardTokens: board,
     pyramid: [
-      shuffleDeck(getLevelDeck(1)).slice(0, 5),
-      shuffleDeck(getLevelDeck(2)).slice(0, 4),
-      shuffleDeck(getLevelDeck(3)).slice(0, 3),
+      deck1.slice(0, 5),
+      deck2.slice(0, 4),
+      deck3.slice(0, 3),
+    ],
+    decks: [
+      deck1.slice(5),
+      deck2.slice(4),
+      deck3.slice(3),
     ],
     availableRoyalCards: [],
     currentPlayerIndex: 0,
     winner: null,
     bag: []
   };
+}
+
+function refillPyramidLevel(
+  pyramid: Card[][],
+  decks: Card[][],
+  level: number
+): { pyramid: Card[][]; decks: Card[][] } {
+  const newPyramid = pyramid.map(levelCards => [...levelCards]);
+  const newDecks = decks.map(deck => [...deck]);
+  const targetCount = level === 0 ? 5 : level === 1 ? 4 : 3;
+
+  while (newPyramid[level].length < targetCount && newDecks[level].length > 0) {
+    const card = newDecks[level].shift()!;
+    newPyramid[level].push(card);
+  }
+
+  return { pyramid: newPyramid, decks: newDecks };
 }
 
 function findCardInPyramid(pyramid: Card[][], cardId: number): { level: number; card: Card } | null {
@@ -140,6 +166,14 @@ export function handleBuyCard(
     ? state.pyramid.map(level => level.filter(c => c.id !== cardId))
     : state.pyramid;
 
+  let finalPyramid = newPyramid;
+  let finalDecks = state.decks;
+  if (fromPyramid) {
+    const refill = refillPyramidLevel(newPyramid, state.decks, fromPyramid.level);
+    finalPyramid = refill.pyramid;
+    finalDecks = refill.decks;
+  }
+
   const newPlayers = [...state.players] as [Player, Player];
   newPlayers[state.currentPlayerIndex] = newPlayer;
 
@@ -147,7 +181,8 @@ export function handleBuyCard(
     state: {
       ...state,
       players: newPlayers,
-      pyramid: newPyramid,
+      pyramid: finalPyramid,
+      decks: finalDecks,
       currentPlayerIndex: opponentIndex
     },
     message: `${player.name} 购买了卡牌 ${cardId}`
@@ -193,6 +228,8 @@ export function handleTakeGold(
     level.filter(c => c.id !== cardId)
   );
 
+  const refill = refillPyramidLevel(newPyramid, state.decks, found.level);
+
   const newPlayers: [Player, Player] = state.currentPlayerIndex === 0
     ? [newPlayer, state.players[1]]
     : [state.players[0], newPlayer];
@@ -202,7 +239,8 @@ export function handleTakeGold(
       ...state,
       players: newPlayers,
       boardTokens: newBoard,
-      pyramid: newPyramid,
+      pyramid: refill.pyramid,
+      decks: refill.decks,
       currentPlayerIndex: opponentIndex
     },
     message: `${player.name} 拿取了黄金并保留了卡牌`

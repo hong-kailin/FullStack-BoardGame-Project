@@ -53,11 +53,12 @@ export interface Player {
 
 // 完整的游戏状态
 export interface GameState {
-  players: [Player, Player];     // 两个玩家，索引 0=玩家1，索引 1=玩家2
-  boardTokens: (TokenType | null)[][];  // 5x5 版图上的标记分布，null 表示空位
-  pyramid: Card[][];             // 金字塔卡牌，pyramid[0]=等级1，pyramid[1]=等级2，pyramid[2]=等级3
-  availableRoyalCards: RoyalCard[];  // 可供获得的皇室卡牌列表
-  currentPlayerIndex: number;    // 当前操作玩家在 players 中的索引（0 或 1）
-  winner: Player | null;         // 获胜者，游戏未结束时为 null
-  bag: TokenType[];              // 标记袋（当前未使用，未来扩展用）
+  players: [Player, Player];
+  boardTokens: (TokenType | null)[][];
+  pyramid: Card[][];
+  decks: Card[][];
+  availableRoyalCards: RoyalCard[];
+  currentPlayerIndex: number;
+  winner: Player | null;
+  bag: TokenType[];
 }
