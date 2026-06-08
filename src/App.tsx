@@ -2,7 +2,7 @@ import { useState } from "react";
 import Board from "./components/Board";
 import Pyramid from "./components/Pyramid";
 import PlayerInfo from "./components/PlayerInfo";
-import { createInitialState, handleTakeTokens } from "./game/gameState";
+import { createInitialState, handleTakeTokens, handleBuyCard } from "./game/gameState";
 import { validateCellSelection } from "./game/board";
 import "./App.css";
 
@@ -40,6 +40,12 @@ export default function App() {
     setSelectedCells([]);
   };
 
+  const handleBuy = (cardId: number) => {
+    const result = handleBuyCard(state, cardId);
+    setState(result.state);
+    setMessage(result.message);
+  };
+
   return (
     <div className="app">
       <h1>璀璨宝石对决</h1>
@@ -58,7 +64,7 @@ export default function App() {
             </button>
           )}
         </div>
-        <Pyramid pyramid={state.pyramid} />
+        <Pyramid pyramid={state.pyramid} onBuyCard={handleBuy} />
       </div>
       <div className="players">
         <PlayerInfo player={state.players[0]} />

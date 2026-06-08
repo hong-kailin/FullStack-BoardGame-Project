@@ -2,6 +2,7 @@ import type { Card } from "../game/types";
 
 interface PyramidProps {
   pyramid: Card[][];
+  onBuyCard: (cardId: number) => void;
 }
 
 function formatCost(cost: Card["cost"]): string {
@@ -11,7 +12,7 @@ function formatCost(cost: Card["cost"]): string {
     .join(" ");
 }
 
-export default function Pyramid({ pyramid }: PyramidProps) {
+export default function Pyramid({ pyramid, onBuyCard }: PyramidProps) {
   return (
     <div className="pyramid">
       <h3>金字塔</h3>
@@ -20,7 +21,11 @@ export default function Pyramid({ pyramid }: PyramidProps) {
           <h4>等级 {levelIndex + 1}</h4>
           <div className="pyramid-cards">
             {levelCards.map((card) => (
-              <div key={card.id} className="pyramid-card">
+              <div
+                key={card.id}
+                className="pyramid-card"
+                onClick={() => onBuyCard(card.id)}
+              >
                 <div>{card.gem}</div>
                 <div>{card.points} 分</div>
                 <div>王冠：{card.crowns}</div>
