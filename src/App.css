@@ -1,6 +1,6 @@
 .app {
   padding: 20px;
-  max-width: 600px;
+  max-width: 1100px;
   margin: 0 auto;
 }
 
@@ -9,8 +9,22 @@
   font-size: 24px;
 }
 
+.message {
+  background: rgba(170, 59, 255, 0.1);
+  border: 1px solid rgba(170, 59, 255, 0.5);
+  border-radius: 6px;
+  padding: 8px 16px;
+  margin-bottom: 10px;
+}
+
+.game-layout {
+  display: flex;
+  gap: 32px;
+  align-items: flex-start;
+}
+
 .board h3 {
-  margin: 0 0 4px;
+  margin: 0 0 8px;
   font-size: 16px;
 }
 
@@ -22,8 +36,8 @@
 
 .board-grid {
   display: grid;
-  grid-template-columns: repeat(5, 48px);
-  grid-template-rows: repeat(5, 48px);
+  grid-template-columns: repeat(5, 64px);
+  grid-template-rows: repeat(5, 64px);
   gap: 4px;
 }
 
@@ -31,8 +45,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 6px;
-  font-size: 22px;
+  border-radius: 8px;
+  font-size: 28px;
   border: 2px solid #e5e4e7;
   background: #f4f3ec;
 }
@@ -60,14 +74,6 @@
 .board-cell.empty span {
   color: #ccc;
   font-size: 14px;
-}
-
-.message {
-  background: rgba(170, 59, 255, 0.1);
-  border: 1px solid rgba(170, 59, 255, 0.5);
-  border-radius: 6px;
-  padding: 8px 16px;
-  margin-bottom: 10px;
 }
 
 .btn-take {
@@ -102,39 +108,57 @@
   color: white;
 }
 
-.game-layout {
-  display: flex;
-  gap: 24px;
-  align-items: flex-start;
-}
-
 .pyramid h3 {
   margin: 0 0 8px;
   font-size: 16px;
 }
 
 .pyramid-level {
-  margin-bottom: 12px;
-}
-
-.pyramid-level h4 {
-  margin: 0 0 6px;
-  font-size: 14px;
+  display: flex;
+  justify-content: center;
+  margin-bottom: 6px;
 }
 
 .pyramid-cards {
   display: flex;
   gap: 8px;
-  flex-wrap: wrap;
 }
 
 .pyramid-card {
-  border: 2px solid #e5e4e7;
-  border-radius: 6px;
+  border: 2px solid;
+  border-radius: 8px;
   background: #f4f3ec;
   padding: 8px;
-  min-width: 90px;
+  width: 100px;
   font-size: 13px;
+  cursor: pointer;
+  transition: transform 0.15s;
+  text-align: center;
+}
+
+.pyramid-card:hover {
+  transform: translateY(-2px);
+  box-shadow: rgba(0, 0, 0, 0.1) 0 4px 8px;
+}
+
+.card-gem {
+  font-weight: bold;
+  font-size: 16px;
+  text-transform: uppercase;
+}
+
+.card-points {
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.card-crowns {
+  font-size: 14px;
+}
+
+.card-cost {
+  font-size: 12px;
+  margin-top: 4px;
 }
 
 .players {
@@ -146,7 +170,7 @@
 .player-info {
   flex: 1;
   border: 2px solid #e5e4e7;
-  border-radius: 6px;
+  border-radius: 8px;
   padding: 12px;
 }
 
