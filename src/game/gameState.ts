@@ -94,7 +94,7 @@ export function handleTakeTokens(
 
   const result = takeTokens(state.boardTokens, positions);
 
-  let newPlayer = { ...player, tokens: { ...player.tokens } };
+  const newPlayer = { ...player, tokens: { ...player.tokens } };
   for (const token of result.taken) {
     newPlayer.tokens[token] = (newPlayer.tokens[token] || 0) + 1;
   }
@@ -151,7 +151,7 @@ export function handleDiscardTokens(
   const player = state.players[state.currentPlayerIndex];
   const opponentIndex = state.currentPlayerIndex === 0 ? 1 : 0;
 
-  let newPlayer = { ...player, tokens: { ...player.tokens } };
+  const newPlayer = { ...player, tokens: { ...player.tokens } };
   for (const type of discards) {
     newPlayer.tokens[type] = Math.max(0, (newPlayer.tokens[type] || 0) - 1);
   }

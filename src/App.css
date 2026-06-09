@@ -1,122 +1,198 @@
+/* ========================================
+   第 51 课：CSS 美化 React 版
+   使用 CSS 变量、渐变、阴影、过渡等
+   让游戏界面更有质感
+   ======================================== */
+
+/* --- 整体布局 --- */
 .app {
-  padding: 20px;
-  max-width: 1100px;
+  padding: 24px;
+  max-width: 1200px;
   margin: 0 auto;
+  min-height: 100vh;
 }
 
 .app h1 {
-  margin: 0 0 16px;
-  font-size: 24px;
+  margin: 0 0 20px;
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-h);
+  text-align: center;
+  letter-spacing: 2px;
 }
 
+/* --- 消息提示 --- */
 .message {
-  background: rgba(170, 59, 255, 0.1);
-  border: 1px solid rgba(170, 59, 255, 0.5);
-  border-radius: 6px;
-  padding: 8px 16px;
-  margin-bottom: 10px;
+  background: linear-gradient(135deg, var(--accent-bg), rgba(170, 59, 255, 0.05));
+  border: 1px solid var(--accent-border);
+  border-radius: 8px;
+  padding: 10px 18px;
+  margin-bottom: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--accent);
+  text-align: center;
 }
 
+/* --- 游戏主布局 --- */
 .game-layout {
   display: flex;
-  gap: 32px;
+  gap: 40px;
   align-items: flex-start;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* ========================================
+   版图 Board
+   ======================================== */
+
+.board {
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: var(--shadow);
 }
 
 .board h3 {
-  margin: 0 0 8px;
+  margin: 0 0 12px;
   font-size: 16px;
+  font-weight: 600;
+  color: var(--text-h);
+  text-align: center;
 }
 
 .board-error {
   color: #e74c3c;
   font-size: 13px;
-  margin-bottom: 4px;
+  margin-top: 6px;
+  text-align: center;
 }
 
 .board-grid {
   display: grid;
-  grid-template-columns: repeat(5, 64px);
-  grid-template-rows: repeat(5, 64px);
-  gap: 4px;
+  grid-template-columns: repeat(5, 68px);
+  grid-template-rows: repeat(5, 68px);
+  gap: 6px;
 }
 
 .board-cell {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
-  font-size: 28px;
-  border: 2px solid #e5e4e7;
-  background: #f4f3ec;
+  border-radius: 10px;
+  font-size: 30px;
+  border: 2px solid var(--border);
+  background: var(--bg);
+  transition: all 0.2s ease;
+  position: relative;
 }
 
 .board-cell.has-token {
   cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
 }
 
 .board-cell.has-token:hover {
-  border-color: #aa3bff;
-  background: rgba(170, 59, 255, 0.1);
+  border-color: var(--accent);
+  background: var(--accent-bg);
+  transform: scale(1.08);
+  box-shadow: 0 4px 12px rgba(170, 59, 255, 0.2);
+  z-index: 1;
 }
 
 .board-cell.selected {
-  border-color: #aa3bff;
-  background: rgba(170, 59, 255, 0.1);
-  box-shadow: 0 0 8px rgba(170, 59, 255, 0.5);
+  border-color: var(--accent);
+  background: var(--accent-bg);
+  box-shadow: 0 0 0 3px rgba(170, 59, 255, 0.3), 0 4px 12px rgba(170, 59, 255, 0.25);
+  transform: scale(1.08);
+  z-index: 1;
 }
 
 .board-cell.empty {
   background: transparent;
   border-color: transparent;
+  box-shadow: none;
+  cursor: default;
+}
+
+.board-cell.empty:hover {
+  transform: none;
 }
 
 .board-cell.empty span {
-  color: #ccc;
+  color: var(--border);
   font-size: 14px;
 }
 
+/* --- 操作按钮 --- */
 .btn-take {
-  margin-top: 8px;
-  padding: 8px 20px;
-  border-radius: 6px;
-  border: 2px solid #aa3bff;
-  background: rgba(170, 59, 255, 0.1);
-  color: #aa3bff;
-  font-size: 14px;
+  display: block;
+  width: 100%;
+  margin-top: 12px;
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: 2px solid var(--accent);
+  background: var(--accent-bg);
+  color: var(--accent);
+  font-size: 15px;
+  font-weight: 600;
   cursor: pointer;
+  transition: all 0.2s ease;
 }
 
 .btn-take:hover {
-  background: rgba(170, 59, 255, 0.5);
+  background: var(--accent);
   color: white;
+  box-shadow: 0 4px 12px rgba(170, 59, 255, 0.3);
 }
 
 .btn-pass {
-  margin-top: 12px;
-  padding: 8px 20px;
-  border-radius: 6px;
-  border: 2px solid #6b6375;
+  display: block;
+  margin: 16px auto 0;
+  padding: 10px 24px;
+  border-radius: 8px;
+  border: 2px solid var(--border);
   background: transparent;
-  color: #6b6375;
+  color: var(--text);
   font-size: 14px;
+  font-weight: 500;
   cursor: pointer;
+  transition: all 0.2s ease;
 }
 
 .btn-pass:hover {
-  background: #6b6375;
-  color: white;
+  background: var(--code-bg);
+  border-color: var(--text);
+  color: var(--text-h);
+}
+
+/* ========================================
+   金字塔 Pyramid
+   ======================================== */
+
+.pyramid {
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: var(--shadow);
+  min-width: 360px;
 }
 
 .pyramid h3 {
-  margin: 0 0 8px;
+  margin: 0 0 12px;
   font-size: 16px;
+  font-weight: 600;
+  color: var(--text-h);
+  text-align: center;
 }
 
 .pyramid-level {
   display: flex;
   justify-content: center;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 
 .pyramid-cards {
@@ -126,160 +202,199 @@
 
 .pyramid-card {
   border: 2px solid;
-  border-radius: 8px;
-  background: #f4f3ec;
-  padding: 8px;
+  border-radius: 10px;
+  background: var(--bg);
+  padding: 10px 8px;
   width: 100px;
   font-size: 13px;
   cursor: pointer;
-  transition: transform 0.15s;
+  transition: all 0.2s ease;
   text-align: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .pyramid-card:hover {
-  transform: translateY(-2px);
-  box-shadow: rgba(0, 0, 0, 0.1) 0 4px 8px;
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
 }
 
 .pyramid-card.affordable {
-  box-shadow: 0 0 6px rgba(46, 204, 113, 0.4);
+  box-shadow: 0 0 0 2px rgba(46, 204, 113, 0.3), 0 4px 12px rgba(46, 204, 113, 0.15);
+}
+
+.pyramid-card.affordable:hover {
+  box-shadow: 0 0 0 2px rgba(46, 204, 113, 0.5), 0 8px 20px rgba(46, 204, 113, 0.2);
 }
 
 .pyramid-card.unaffordable {
-  opacity: 0.6;
+  opacity: 0.5;
 }
 
 .card-gem {
-  font-weight: bold;
+  font-weight: 700;
   font-size: 16px;
   text-transform: uppercase;
+  margin-bottom: 2px;
 }
 
 .card-points {
-  font-size: 20px;
-  font-weight: bold;
+  font-size: 22px;
+  font-weight: 800;
+  margin: 2px 0;
 }
 
 .card-crowns {
   font-size: 14px;
+  margin: 2px 0;
 }
 
 .card-cost {
-  font-size: 12px;
+  font-size: 11px;
   margin-top: 4px;
+  color: var(--text);
+  line-height: 1.4;
 }
+
+/* ========================================
+   玩家信息 PlayerInfo
+   ======================================== */
 
 .players {
   display: flex;
-  gap: 16px;
-  margin-top: 16px;
+  gap: 20px;
+  margin-top: 20px;
 }
 
 .player-info {
   flex: 1;
-  border: 2px solid #e5e4e7;
-  border-radius: 8px;
-  padding: 12px;
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  background: var(--code-bg);
+  transition: all 0.3s ease;
 }
 
 .player-info.current {
-  border-color: #aa3bff;
-  background: rgba(170, 59, 255, 0.1);
+  border-color: var(--accent);
+  background: linear-gradient(135deg, var(--accent-bg), var(--code-bg));
+  box-shadow: 0 0 0 1px var(--accent-border), 0 4px 16px rgba(170, 59, 255, 0.1);
 }
 
 .player-info h3 {
-  margin: 0 0 6px;
-  font-size: 16px;
+  margin: 0 0 10px;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text-h);
 }
 
 .player-tokens {
-  font-size: 14px;
-  margin-bottom: 6px;
+  font-size: 16px;
+  margin-bottom: 8px;
+  line-height: 1.6;
 }
 
 .player-stats {
   display: flex;
-  gap: 12px;
+  gap: 16px;
   font-size: 14px;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+
+.player-stats span {
+  background: var(--bg);
+  padding: 3px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  font-weight: 500;
 }
 
 .player-bonuses {
   font-size: 13px;
-  margin-top: 4px;
+  color: var(--text);
+  margin-bottom: 8px;
 }
 
+/* --- 已购买卡牌 --- */
 .owned-cards {
-  margin-top: 8px;
+  margin-top: 10px;
 }
 
 .color-group {
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 
 .color-group-header {
   font-size: 13px;
-  font-weight: bold;
-  margin-bottom: 3px;
+  font-weight: 700;
+  margin-bottom: 4px;
 }
 
 .color-group-cards {
   display: flex;
-  gap: 4px;
+  gap: 5px;
   flex-wrap: wrap;
 }
 
 .owned-card {
   border: 1px solid;
-  border-radius: 4px;
-  padding: 2px 5px;
-  font-size: 11px;
-  background: #f4f3ec;
+  border-radius: 6px;
+  padding: 3px 7px;
+  font-size: 12px;
+  background: var(--bg);
   display: flex;
-  gap: 3px;
+  gap: 4px;
+  font-weight: 500;
 }
 
+/* --- 保留卡牌 --- */
 .reserved-cards {
-  margin-top: 6px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
 }
 
 .reserved-label {
-  font-size: 12px;
+  font-size: 13px;
   color: #f39c12;
-  margin-bottom: 4px;
+  font-weight: 600;
+  margin-bottom: 6px;
 }
 
 .reserved-list {
   display: flex;
-  gap: 6px;
+  gap: 8px;
   flex-wrap: wrap;
 }
 
 .reserved-card {
   border: 2px solid;
-  border-radius: 6px;
-  padding: 6px;
-  width: 80px;
-  font-size: 11px;
-  background: #f4f3ec;
+  border-radius: 8px;
+  padding: 8px;
+  width: 85px;
+  font-size: 12px;
+  background: var(--bg);
   cursor: pointer;
   text-align: center;
-  transition: transform 0.15s;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .reserved-card:hover {
-  transform: translateY(-2px);
-  box-shadow: rgba(0, 0, 0, 0.1) 0 4px 8px;
+  transform: translateY(-3px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
 }
 
 .reserved-gem {
-  font-weight: bold;
+  font-weight: 700;
   font-size: 14px;
   text-transform: uppercase;
 }
 
 .reserved-points {
-  font-size: 16px;
-  font-weight: bold;
+  font-size: 18px;
+  font-weight: 800;
+  margin: 2px 0;
 }
 
 .reserved-crowns {
@@ -289,35 +404,92 @@
 .reserved-cost {
   font-size: 10px;
   margin-top: 2px;
+  color: var(--text);
 }
 
+/* ========================================
+   归还标记面板
+   ======================================== */
+
 .discard-panel {
-  margin-bottom: 16px;
+  background: var(--code-bg);
+  border: 2px solid #e74c3c;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.discard-panel .message {
+  background: rgba(231, 76, 60, 0.1);
+  border-color: rgba(231, 76, 60, 0.3);
+  color: #e74c3c;
 }
 
 .discard-tokens {
   display: flex;
-  gap: 8px;
+  gap: 10px;
   flex-wrap: wrap;
-  margin-bottom: 8px;
+  justify-content: center;
+  margin-bottom: 12px;
 }
 
 .discard-token {
-  border: 2px solid #e5e4e7;
-  border-radius: 6px;
-  padding: 8px 12px;
-  font-size: 14px;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-size: 15px;
   cursor: pointer;
-  background: #f4f3ec;
-  transition: border-color 0.2s, background 0.2s;
+  background: var(--bg);
+  transition: all 0.2s ease;
+  font-weight: 500;
 }
 
 .discard-token:hover {
-  border-color: #aa3bff;
-  background: rgba(170, 59, 255, 0.1);
+  border-color: var(--accent);
+  background: var(--accent-bg);
+  transform: scale(1.05);
 }
 
 .discard-token.selected {
   border-color: #e74c3c;
   background: rgba(231, 76, 60, 0.1);
+  box-shadow: 0 0 0 2px rgba(231, 76, 60, 0.2);
+}
+
+/* ========================================
+   响应式布局
+   ======================================== */
+
+@media (max-width: 900px) {
+  .game-layout {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .players {
+    flex-direction: column;
+  }
+
+  .pyramid {
+    min-width: unset;
+    width: 100%;
+  }
+
+  .pyramid-card {
+    width: 80px;
+    padding: 6px 4px;
+    font-size: 11px;
+  }
+
+  .board-grid {
+    grid-template-columns: repeat(5, 52px);
+    grid-template-rows: repeat(5, 52px);
+    gap: 4px;
+  }
+
+  .board-cell {
+    font-size: 24px;
+    border-radius: 8px;
+  }
 }

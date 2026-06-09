@@ -1,5 +1,5 @@
 import type { Player, Card } from "../game/types";
-import { getPlayerBonuses, getActualCost } from "../game/purchase";
+import { getPlayerBonuses } from "../game/purchase";
 import { getTotalPoints, getTotalCrowns } from "../game/game";
 
 interface PlayerInfoProps {

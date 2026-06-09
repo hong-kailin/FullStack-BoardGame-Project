@@ -52,7 +52,7 @@ export default function App() {
     if (result.needsDiscard > 0) {
       setDiscardMode(true);
       setDiscardNeeded(result.needsDiscard);
-      setDiscardSelection([]);
+      setDiscardSelection({});
       setMessage(result.message);
     } else {
       setMessage(result.message);
