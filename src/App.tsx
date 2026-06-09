@@ -2,10 +2,17 @@ import { useState } from "react";
 import Board from "./components/Board";
 import Pyramid from "./components/Pyramid";
 import PlayerInfo from "./components/PlayerInfo";
-import { createInitialState, handleTakeTokens, handleBuyCard, handlePass, handleTakeGold } from "./game/gameState";
+import { createInitialState, handleTakeTokens, handleBuyCard, handlePass, handleTakeGold, handleDiscardTokens } from "./game/gameState";
 import { validateCellSelection } from "./game/board";
 import { getPlayerBonuses, getActualCost, canAfford } from "./game/purchase";
+import type { TokenType } from "./game/types";
 import "./App.css";
+
+const TOKEN_LABELS: Record<string, string> = {
+  red: "🔴", blue: "🔵", green: "🟢",
+  white: "⚪", black: "⚫",
+  pearl: "🦪", gold: "🟡",
+};
 
 export default function App() {
   const [state, setState] = useState(createInitialState());
@@ -13,6 +20,9 @@ export default function App() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [goldMode, setGoldMode] = useState(false);
+  const [discardMode, setDiscardMode] = useState(false);
+  const [discardNeeded, setDiscardNeeded] = useState(0);
+  const [discardSelection, setDiscardSelection] = useState<Record<string, number>>({});
 
   const handleCellClick = (row: number, col: number) => {
     setError("");
@@ -38,8 +48,47 @@ export default function App() {
     if (selectedCells.length === 0) return;
     const result = handleTakeTokens(state, selectedCells);
     setState(result.state);
-    setMessage(result.message);
     setSelectedCells([]);
+    if (result.needsDiscard > 0) {
+      setDiscardMode(true);
+      setDiscardNeeded(result.needsDiscard);
+      setDiscardSelection([]);
+      setMessage(result.message);
+    } else {
+      setMessage(result.message);
+    }
+  };
+
+  const handleDiscardSelect = (type: TokenType) => {
+    const current = discardSelection[type] || 0;
+    const totalSelected = Object.values(discardSelection).reduce((a, b) => a + b, 0);
+    const available = player.tokens[type] || 0;
+
+    if (current < available && totalSelected < discardNeeded) {
+      setDiscardSelection({ ...discardSelection, [type]: current + 1 });
+    } else if (current > 0) {
+      const newSelection = { ...discardSelection };
+      newSelection[type] = current - 1;
+      if (newSelection[type] === 0) delete newSelection[type];
+      setDiscardSelection(newSelection);
+    }
+  };
+
+  const handleDiscardConfirm = () => {
+    const totalSelected = Object.values(discardSelection).reduce((a, b) => a + b, 0);
+    if (totalSelected !== discardNeeded) return;
+    const discards: TokenType[] = [];
+    for (const [type, count] of Object.entries(discardSelection)) {
+      for (let i = 0; i < count; i++) {
+        discards.push(type as TokenType);
+      }
+    }
+    const result = handleDiscardTokens(state, discards);
+    setState(result.state);
+    setMessage(result.message);
+    setDiscardMode(false);
+    setDiscardNeeded(0);
+    setDiscardSelection({});
   };
 
   const handleTakeGoldAction = () => {
@@ -100,36 +149,67 @@ export default function App() {
       <h1>璀璨宝石对决</h1>
       {message && <div className="message">{message}</div>}
       {goldMode && <div className="message">请点击金字塔中的一张卡牌来保留</div>}
-      <div className="game-layout">
-        <div>
-          <Board
-            boardTokens={state.boardTokens}
-            selectedCells={selectedCells}
-            onCellClick={handleCellClick}
-          />
-          {error && <div className="board-error">{error}</div>}
-          {!state.winner && !goldMode && selectedCells.length > 0 && (
-            isGoldSelected ? (
-              <button className="btn-take" onClick={handleTakeGoldAction}>
-                拿取黄金并保留卡牌
-              </button>
-            ) : (
-              <button className="btn-take" onClick={handleTake}>
-                拿取标记 ({selectedCells.length} 个)
-              </button>
-            )
+      {discardMode && (
+        <div className="discard-panel">
+          <div className="message">标记超过上限，请选择 {discardNeeded} 个标记归还（已选 {discardSelection.length} 个）</div>
+          <div className="discard-tokens">
+            {(["pearl", "red", "blue", "green", "white", "black", "gold"] as const).map((type) => {
+              const count = player.tokens[type] || 0;
+              if (count === 0) return null;
+              const selectedCount = discardSelection[type] || 0;
+              return (
+                <div
+                  key={type}
+                  className={`discard-token ${selectedCount > 0 ? "selected" : ""}`}
+                  onClick={() => handleDiscardSelect(type)}
+                >
+                  {TOKEN_LABELS[type]} x{count}
+                  {selectedCount > 0 && `（归还 ${selectedCount}）`}
+                </div>
+              );
+            })}
+          </div>
+          {Object.values(discardSelection).reduce((a, b) => a + b, 0) === discardNeeded && (
+            <button className="btn-take" onClick={handleDiscardConfirm}>
+              确认归还
+            </button>
           )}
         </div>
-        <Pyramid pyramid={state.pyramid} onBuyCard={handleBuy} canAffordCard={canAffordCard} />
-      </div>
-      <div className="players">
-        <PlayerInfo player={state.players[0]} isCurrentPlayer={state.currentPlayerIndex === 0} onBuyReserved={handleBuyReserved} />
-        <PlayerInfo player={state.players[1]} isCurrentPlayer={state.currentPlayerIndex === 1} onBuyReserved={handleBuyReserved} />
-      </div>
-      {!state.winner && !goldMode && (
-        <button className="btn-pass" onClick={handleSkip}>
-          跳过回合
-        </button>
+      )}
+      {!discardMode && (
+        <>
+          <div className="game-layout">
+            <div>
+              <Board
+                boardTokens={state.boardTokens}
+                selectedCells={selectedCells}
+                onCellClick={handleCellClick}
+              />
+              {error && <div className="board-error">{error}</div>}
+              {!state.winner && !goldMode && selectedCells.length > 0 && (
+                isGoldSelected ? (
+                  <button className="btn-take" onClick={handleTakeGoldAction}>
+                    拿取黄金并保留卡牌
+                  </button>
+                ) : (
+                  <button className="btn-take" onClick={handleTake}>
+                    拿取标记 ({selectedCells.length} 个)
+                  </button>
+                )
+              )}
+            </div>
+            <Pyramid pyramid={state.pyramid} onBuyCard={handleBuy} canAffordCard={canAffordCard} />
+          </div>
+          <div className="players">
+            <PlayerInfo player={state.players[0]} isCurrentPlayer={state.currentPlayerIndex === 0} onBuyReserved={handleBuyReserved} />
+            <PlayerInfo player={state.players[1]} isCurrentPlayer={state.currentPlayerIndex === 1} onBuyReserved={handleBuyReserved} />
+          </div>
+          {!state.winner && !goldMode && (
+            <button className="btn-pass" onClick={handleSkip}>
+              跳过回合
+            </button>
+          )}
+        </>
       )}
     </div>
   );

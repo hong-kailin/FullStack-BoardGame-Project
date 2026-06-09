@@ -1,7 +1,7 @@
 import type { GameState, Player, TokenType, Card } from "./types";
 import { shuffleDeck, getLevelDeck } from "./card-pool";
 import { createBoard, takeTokens } from "./board";
-import { checkWinCondition, checkRoyalCardEligibility, enforceTokenLimit } from "./game";
+import { checkWinCondition, checkRoyalCardEligibility } from "./game";
 import { getPlayerBonuses, getActualCost, canAfford, purchaseCard } from "./purchase";
 
 export function createInitialState(): GameState {
@@ -88,7 +88,7 @@ function findCardInPyramid(pyramid: Card[][], cardId: number): { level: number; 
 export function handleTakeTokens(
   state: GameState,
   positions: [number, number][]
-): { state: GameState; message: string } {
+): { state: GameState; message: string; needsDiscard: number } {
   const player = state.players[state.currentPlayerIndex];
   const opponentIndex = state.currentPlayerIndex === 0 ? 1 : 0;
 
@@ -98,7 +98,30 @@ export function handleTakeTokens(
   for (const token of result.taken) {
     newPlayer.tokens[token] = (newPlayer.tokens[token] || 0) + 1;
   }
-  newPlayer = enforceTokenLimit(newPlayer);
+
+  const totalTokens = Object.values(newPlayer.tokens).reduce((a, b) => a + b, 0);
+  const needsDiscard = totalTokens > 10 ? totalTokens - 10 : 0;
+
+  if (needsDiscard > 0) {
+    let opponent = state.players[opponentIndex];
+    if (result.opponentGetsPrivilege) {
+      opponent = { ...opponent, privileges: (opponent.privileges || 0) + 1 };
+    }
+
+    const newPlayers: [Player, Player] = state.currentPlayerIndex === 0
+      ? [newPlayer, opponent]
+      : [opponent, newPlayer];
+
+    return {
+      state: {
+        ...state,
+        players: newPlayers,
+        boardTokens: result.board,
+      },
+      message: `${player.name} 拿取了 ${result.taken.length} 个标记，标记超过 10 个，请选择要归还的标记`,
+      needsDiscard
+    };
+  }
 
   let opponent = state.players[opponentIndex];
   if (result.opponentGetsPrivilege) {
@@ -116,7 +139,33 @@ export function handleTakeTokens(
       boardTokens: result.board,
       currentPlayerIndex: opponentIndex
     },
-    message: `${player.name} 拿取了 ${result.taken.length} 个标记`
+    message: `${player.name} 拿取了 ${result.taken.length} 个标记`,
+    needsDiscard: 0
+  };
+}
+
+export function handleDiscardTokens(
+  state: GameState,
+  discards: TokenType[]
+): { state: GameState; message: string } {
+  const player = state.players[state.currentPlayerIndex];
+  const opponentIndex = state.currentPlayerIndex === 0 ? 1 : 0;
+
+  let newPlayer = { ...player, tokens: { ...player.tokens } };
+  for (const type of discards) {
+    newPlayer.tokens[type] = Math.max(0, (newPlayer.tokens[type] || 0) - 1);
+  }
+
+  const newPlayers = [...state.players] as [Player, Player];
+  newPlayers[state.currentPlayerIndex] = newPlayer;
+
+  return {
+    state: {
+      ...state,
+      players: newPlayers,
+      currentPlayerIndex: opponentIndex
+    },
+    message: `${player.name} 归还了 ${discards.length} 个标记`
   };
 }
 
