@@ -1,40 +1,51 @@
 import express from "express";
+import crypto from "node:crypto";
+import fs from "node:fs";
 
 const app = express();
-const items: Record<string, string> = {};
+const USERS_FILE = "server/users.json";
 
 app.use(express.json());
+
+function readUsers(): Record<string, { passwordHash: string; salt: string }> {
+  try {
+    const data = fs.readFileSync(USERS_FILE, "utf-8");
+    return JSON.parse(data);
+  } catch {
+    return {};
+  }
+}
+
+function saveUsers(users: Record<string, { passwordHash: string; salt: string }>) {
+  fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
+}
 
 app.get("/api/ping", (_req, res) => {
   res.json({ message: "pong" });
 });
 
-app.get("/api/items", (_req, res) => {
-  res.json({ items });
-});
+app.post("/api/register", (req, res) => {
+  const { username, password } = req.body;
 
-app.post("/api/items", (req, res) => {
-  const id = String(Date.now());
-  items[id] = req.body.name ?? "unnamed";
-  res.status(201).json({ id, name: items[id] });
-});
-
-app.put("/api/items/:id", (req, res) => {
-  if (!items[req.params.id]) {
-    res.status(404).json({ error: "Item not found" });
+  if (!username || !password) {
+    res.status(400).json({ error: "username and password are required" });
     return;
   }
-  items[req.params.id] = req.body.name ?? items[req.params.id];
-  res.json({ id: req.params.id, name: items[req.params.id] });
-});
 
-app.delete("/api/items/:id", (req, res) => {
-  if (!items[req.params.id]) {
-    res.status(404).json({ error: "Item not found" });
+  const users = readUsers();
+
+  if (users[username]) {
+    res.status(409).json({ error: "username already exists" });
     return;
   }
-  delete items[req.params.id];
-  res.json({ message: "deleted" });
+
+  const salt = crypto.randomBytes(16).toString("hex");
+  const passwordHash = crypto.scryptSync(password, salt, 64).toString("hex");
+
+  users[username] = { passwordHash, salt };
+  saveUsers(users);
+
+  res.status(201).json({ message: "registered" });
 });
 
 app.listen(3001, () => {
