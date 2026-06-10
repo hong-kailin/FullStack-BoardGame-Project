@@ -48,6 +48,32 @@ app.post("/api/register", (req, res) => {
   res.status(201).json({ message: "registered" });
 });
 
+app.post("/api/login", (req, res) => {
+  const { username, password } = req.body;
+
+  if (!username || !password) {
+    res.status(400).json({ error: "username and password are required" });
+    return;
+  }
+
+  const users = readUsers();
+  const user = users[username];
+
+  if (!user) {
+    res.status(401).json({ error: "invalid username or password" });
+    return;
+  }
+
+  const hash = crypto.scryptSync(password, user.salt, 64).toString("hex");
+
+  if (hash !== user.passwordHash) {
+    res.status(401).json({ error: "invalid username or password" });
+    return;
+  }
+
+  res.json({ message: "login successful", username });
+});
+
 app.listen(3001, () => {
   console.log("Express server running at http://localhost:3001");
 });
