@@ -219,3 +219,15 @@ db.prepare("SELECT * FROM users WHERE username = ?").get(username);
 | 查一行 | `SELECT ... FROM users WHERE username = ?` | `db.prepare(sql).get(name)` |
 | 查所有 | `SELECT * FROM users` | `db.prepare(sql).all()` |
 | 删除 | `DELETE FROM sessions WHERE sessionId = ?` | `db.prepare(sql).run(id)` |
+
+---
+
+## 10. VS Code 中查看 SQLite 数据库
+
+`.db` 文件是二进制格式，不能直接用文本编辑器打开。推荐安装 **SQLite Viewer** 插件：
+
+1. VS Code 左侧点击扩展图标（或 `Cmd+Shift+X`）
+2. 搜索 `SQLite Viewer`（作者：Florian Klampfer）
+3. 安装后，右键 `.db` 文件 → "Open Database"
+
+就能像 Excel 一样浏览表结构、查看数据行，非常直观。
