@@ -1,26 +1,24 @@
 import express from "express";
 import crypto from "node:crypto";
-import fs from "node:fs";
+import Database from "better-sqlite3";
 
 const app = express();
-const USERS_FILE = "server/users.json";
+const db = new Database("server/data.db");
 
-const sessions: Record<string, string> = {};
+db.exec(`
+  CREATE TABLE IF NOT EXISTS users (
+    username TEXT PRIMARY KEY,
+    passwordHash TEXT NOT NULL,
+    salt TEXT NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS sessions (
+    sessionId TEXT PRIMARY KEY,
+    username TEXT NOT NULL
+  );
+`);
 
 app.use(express.json());
-
-function readUsers(): Record<string, { passwordHash: string; salt: string }> {
-  try {
-    const data = fs.readFileSync(USERS_FILE, "utf-8");
-    return JSON.parse(data);
-  } catch {
-    return {};
-  }
-}
-
-function saveUsers(users: Record<string, { passwordHash: string; salt: string }>) {
-  fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
-}
 
 function parseCookies(cookieHeader: string | undefined): Record<string, string> {
   const cookies: Record<string, string> = {};
@@ -44,9 +42,8 @@ app.post("/api/register", (req, res) => {
     return;
   }
 
-  const users = readUsers();
-
-  if (users[username]) {
+  const existing = db.prepare("SELECT username FROM users WHERE username = ?").get(username);
+  if (existing) {
     res.status(409).json({ error: "username already exists" });
     return;
   }
@@ -54,8 +51,7 @@ app.post("/api/register", (req, res) => {
   const salt = crypto.randomBytes(16).toString("hex");
   const passwordHash = crypto.scryptSync(password, salt, 64).toString("hex");
 
-  users[username] = { passwordHash, salt };
-  saveUsers(users);
+  db.prepare("INSERT INTO users (username, passwordHash, salt) VALUES (?, ?, ?)").run(username, passwordHash, salt);
 
   res.status(201).json({ message: "registered" });
 });
@@ -68,8 +64,7 @@ app.post("/api/login", (req, res) => {
     return;
   }
 
-  const users = readUsers();
-  const user = users[username];
+  const user = db.prepare("SELECT passwordHash, salt FROM users WHERE username = ?").get(username) as { passwordHash: string; salt: string } | undefined;
 
   if (!user) {
     res.status(401).json({ error: "invalid username or password" });
@@ -84,7 +79,7 @@ app.post("/api/login", (req, res) => {
   }
 
   const sessionId = crypto.randomBytes(32).toString("hex");
-  sessions[sessionId] = username;
+  db.prepare("INSERT INTO sessions (sessionId, username) VALUES (?, ?)").run(sessionId, username);
 
   res.setHeader("Set-Cookie", `sessionId=${sessionId}; HttpOnly; Path=/`);
   res.json({ message: "login successful", username });
@@ -94,12 +89,19 @@ app.get("/api/me", (req, res) => {
   const cookies = parseCookies(req.headers.cookie);
   const sessionId = cookies.sessionId;
 
-  if (!sessionId || !sessions[sessionId]) {
+  if (!sessionId) {
     res.status(401).json({ error: "not logged in" });
     return;
   }
 
-  res.json({ username: sessions[sessionId] });
+  const session = db.prepare("SELECT username FROM sessions WHERE sessionId = ?").get(sessionId) as { username: string } | undefined;
+
+  if (!session) {
+    res.status(401).json({ error: "not logged in" });
+    return;
+  }
+
+  res.json({ username: session.username });
 });
 
 app.post("/api/logout", (req, res) => {
@@ -107,7 +109,7 @@ app.post("/api/logout", (req, res) => {
   const sessionId = cookies.sessionId;
 
   if (sessionId) {
-    delete sessions[sessionId];
+    db.prepare("DELETE FROM sessions WHERE sessionId = ?").run(sessionId);
   }
 
   res.setHeader("Set-Cookie", "sessionId=; HttpOnly; Path=/; Max-Age=0");
