@@ -14,7 +14,53 @@ const TOKEN_LABELS: Record<string, string> = {
   pearl: "🦪", gold: "🟡",
 };
 
+function AuthForm({ onLogin }: { onLogin: (username: string) => void }) {
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [isRegister, setIsRegister] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleSubmit = async () => {
+    setError("");
+    const endpoint = isRegister ? "/api/register" : "/api/login";
+    const res = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      setError(data.error);
+      return;
+    }
+    onLogin(username);
+  };
+
+  return (
+    <div className="auth-form">
+      <h2>{isRegister ? "注册" : "登录"}</h2>
+      <input
+        placeholder="用户名"
+        value={username}
+        onChange={(e) => setUsername(e.target.value)}
+      />
+      <input
+        type="password"
+        placeholder="密码"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+      />
+      <button onClick={handleSubmit}>{isRegister ? "注册" : "登录"}</button>
+      {error && <div className="auth-error">{error}</div>}
+      <button className="btn-link" onClick={() => { setIsRegister(!isRegister); setError(""); }}>
+        {isRegister ? "已有账号？去登录" : "没有账号？去注册"}
+      </button>
+    </div>
+  );
+}
+
 export default function App() {
+  const [username, setUsername] = useState<string | null>(null);
   const [state, setState] = useState(createInitialState());
   const [selectedCells, setSelectedCells] = useState<[number, number][]>([]);
   const [message, setMessage] = useState("");
@@ -23,6 +69,10 @@ export default function App() {
   const [discardMode, setDiscardMode] = useState(false);
   const [discardNeeded, setDiscardNeeded] = useState(0);
   const [discardSelection, setDiscardSelection] = useState<Record<string, number>>({});
+
+  if (!username) {
+    return <AuthForm onLogin={setUsername} />;
+  }
 
   const handleCellClick = (row: number, col: number) => {
     setError("");
@@ -147,6 +197,10 @@ export default function App() {
   return (
     <div className="app">
       <h1>璀璨宝石对决</h1>
+      <div className="user-bar">
+        <span>{username}</span>
+        <button className="btn-link" onClick={() => setUsername(null)}>退出</button>
+      </div>
       {message && <div className="message">{message}</div>}
       {goldMode && <div className="message">请点击金字塔中的一张卡牌来保留</div>}
       {discardMode && (
