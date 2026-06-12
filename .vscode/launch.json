@@ -4,11 +4,27 @@
     {
       "type": "node",
       "request": "launch",
-      "name": "Debug Server",
+      "name": "Debug 后端",
       "runtimeExecutable": "npx",
-      "runtimeArgs": ["tsx", "${file}"],
+      "runtimeArgs": ["tsx", "server/index-express.ts"],
       "console": "integratedTerminal",
       "skipFiles": ["<node_internals>/**"]
+    },
+    {
+      "type": "chrome",
+      "request": "launch",
+      "name": "Debug 前端",
+      "url": "http://localhost:5173",
+      "webRoot": "${workspaceFolder}/src",
+      "sourceMapPathOverrides": {
+        "/__vite/*": "${webRoot}/*"
+      }
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Debug 全栈（前端 + 后端）",
+      "configurations": ["Debug 后端", "Debug 前端"]
     }
   ]
 }
