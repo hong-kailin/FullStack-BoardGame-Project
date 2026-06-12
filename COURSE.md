@@ -398,9 +398,90 @@
 
 > 到这里你已经有了**前端**和**后端**两个独立部分。进入 AI / 联机后，后端要复用前端的游戏逻辑和类型——"如何在前后端之间共享 `core`"的痛点真正出现了。这时才正式拆 Monorepo。
 
-### 第 60 课：为什么需要 monorepo？（用刚遇到的共享痛点切入）
-### 第 61 课：动手搭建 Monorepo 骨架（npm workspaces）
-### 第 62 课：拆分代码到 core / web / server 子包
+### 当前项目结构的问题
+
+```
+splendor-react/          # 单一 package
+├── src/
+│   ├── game/            # 游戏逻辑（types, board, purchase, game, gameState, card-pool）
+│   ├── components/      # React 组件（Board, Pyramid, PlayerInfo）
+│   └── App.tsx          # 主组件
+├── server/
+│   └── index-express.ts # Express 后端（独立，不引用游戏逻辑）
+├── tsconfig.app.json    # 只 include "src"
+├── tsconfig.server.json # 只 include "server"
+└── package.json         # 混合了前端+后端依赖
+```
+
+**核心痛点**：server 和 src 是隔离的。等实现 AI 对手和在线联机时，server 需要调用游戏逻辑（校验操作、计算状态等），但现在 server 根本 import 不了 `src/game/` 里的代码。
+
+### 目标结构
+
+```
+splendor-duel/
+├── package.json          # root: workspaces 声明
+├── packages/
+│   ├── core/             # @splendor/core — 纯游戏逻辑，零依赖
+│   │   ├── package.json
+│   │   ├── tsconfig.json
+│   │   └── src/
+│   │       ├── types.ts
+│   │       ├── board.ts
+│   │       ├── card-pool.ts
+│   │       ├── purchase.ts
+│   │       ├── game.ts
+│   │       └── gameState.ts
+│   ├── web/              # @splendor/web — React 前端
+│   │   ├── package.json
+│   │   ├── tsconfig.json
+│   │   ├── vite.config.ts
+│   │   └── src/
+│   │       ├── App.tsx
+│   │       ├── components/
+│   │       └── ...
+│   └── server/           # @splendor/server — Express 后端
+│       ├── package.json
+│       ├── tsconfig.json
+│       └── src/
+│           └── index.ts
+```
+
+### 关键设计决策
+
+| 决策 | 选择 | 原因 |
+|------|------|------|
+| 包名 | `@splendor/core` | npm scope 避免命名冲突，语义清晰 |
+| core 依赖 | 零外部依赖 | 纯 TypeScript 逻辑，前后端都能用 |
+| 构建工具 | 暂不引入 | 当前用 tsx 直接运行，够用 |
+| 数据库文件 | 留在 `packages/server/` | 后端专属，不共享 |
+
+---
+
+### 第 60 课：为什么需要 Monorepo？
+
+- 对比两种方案：复制代码 vs 共享包
+- 讲解 npm workspaces 的原理（类比 Python 的 `pip install -e .`）
+- 画出目标结构图，理解三个子包的职责边界
+- **产出**：理解 monorepo 解决了什么问题
+
+### 第 61 课：搭建 Monorepo 骨架
+
+- 创建 `packages/core`、`packages/web`、`packages/server` 目录
+- 每个子包写最小 `package.json`（`name` 用 `@splendor/xxx`）
+- 根 `package.json` 加 `"workspaces": ["packages/*"]`
+- `npm install` 验证软链接生效
+- 在 `web` 里 `import { ... } from "@splendor/core"` 验证能引用
+- **产出**：三个子包的空壳，能互相 import
+
+### 第 62 课：拆分代码并跑通
+
+- `src/game/*` → `packages/core/src/`
+- `src/components/*`、`src/App.tsx`、`src/App.css`、`src/index.css`、`src/main.tsx` → `packages/web/src/`
+- `server/index-express.ts` → `packages/server/src/index.ts`
+- 修复所有 import 路径（`"./types"` → 相对路径或包名引用）
+- 配置各自的 tsconfig
+- `npm run dev` 前端能跑，`npm run server` 后端能跑
+- **产出**：拆分后的项目功能与拆分前完全一致
 
 ---
 
