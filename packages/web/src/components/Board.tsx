@@ -1,4 +1,4 @@
-import type { TokenType } from "../game/types";
+import type { TokenType } from "@splendor/core";
 
 interface BoardProps {
   boardTokens: (TokenType | null)[][];

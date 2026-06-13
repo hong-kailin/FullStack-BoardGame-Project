@@ -1,9 +1,12 @@
 import express from "express";
 import crypto from "node:crypto";
 import Database from "better-sqlite3";
+import { resolve, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 
+const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
-const db = new Database("server/data.db");
+const db = new Database(resolve(__dirname, "..", "data.db"));
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS users (

@@ -1,4 +1,4 @@
-import type { Card } from "../game/types";
+import type { Card } from "@splendor/core";
 
 interface PyramidProps {
   pyramid: Card[][];

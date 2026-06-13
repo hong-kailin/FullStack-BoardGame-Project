@@ -2,10 +2,10 @@ import { useState } from "react";
 import Board from "./components/Board";
 import Pyramid from "./components/Pyramid";
 import PlayerInfo from "./components/PlayerInfo";
-import { createInitialState, handleTakeTokens, handleBuyCard, handlePass, handleTakeGold, handleDiscardTokens } from "./game/gameState";
-import { validateCellSelection } from "./game/board";
-import { getPlayerBonuses, getActualCost, canAfford } from "./game/purchase";
-import type { TokenType } from "./game/types";
+import { createInitialState, handleTakeTokens, handleBuyCard, handlePass, handleTakeGold, handleDiscardTokens } from "@splendor/core";
+import { validateCellSelection } from "@splendor/core";
+import { getPlayerBonuses, getActualCost, canAfford } from "@splendor/core";
+import type { TokenType } from "@splendor/core";
 import "./App.css";
 
 const TOKEN_LABELS: Record<string, string> = {

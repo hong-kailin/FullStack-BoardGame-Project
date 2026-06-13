@@ -1,6 +1,6 @@
-import type { Player, Card } from "../game/types";
-import { getPlayerBonuses } from "../game/purchase";
-import { getTotalPoints, getTotalCrowns } from "../game/game";
+import type { Player, Card } from "@splendor/core";
+import { getPlayerBonuses } from "@splendor/core";
+import { getTotalPoints, getTotalCrowns } from "@splendor/core";
 
 interface PlayerInfoProps {
   player: Player;
