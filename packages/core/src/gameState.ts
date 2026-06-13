@@ -1,6 +1,6 @@
 import type { GameState, Player, TokenType, Card } from "./types";
 import { shuffleDeck, getLevelDeck } from "./card-pool";
-import { createBoard, takeTokens } from "./board";
+import { createBoard, takeTokens, refillBoard } from "./board";
 import { checkWinCondition, checkRoyalCardEligibility } from "./game";
 import { getPlayerBonuses, getActualCost, canAfford, purchaseCard } from "./purchase";
 
@@ -156,6 +156,8 @@ export function handleDiscardTokens(
     newPlayer.tokens[type] = Math.max(0, (newPlayer.tokens[type] || 0) - 1);
   }
 
+  const newBag = [...state.bag, ...discards];
+
   const newPlayers = [...state.players] as [Player, Player];
   newPlayers[state.currentPlayerIndex] = newPlayer;
 
@@ -163,6 +165,7 @@ export function handleDiscardTokens(
     state: {
       ...state,
       players: newPlayers,
+      bag: newBag,
       currentPlayerIndex: opponentIndex
     },
     message: `${player.name} 归还了 ${discards.length} 个标记`
@@ -192,6 +195,14 @@ export function handleBuyCard(
   const result = purchaseCard(player, card, actualCost);
   let newPlayer = result.player;
 
+  const spentTokens: TokenType[] = [];
+  for (const [type, count] of Object.entries(result.spent)) {
+    for (let i = 0; i < count; i++) {
+      spentTokens.push(type as TokenType);
+    }
+  }
+  const newBag = [...state.bag, ...spentTokens];
+
   if (fromReserved) {
     newPlayer = {
       ...newPlayer,
@@ -206,7 +217,7 @@ export function handleBuyCard(
 
   if (checkWinCondition(newPlayer)) {
     return {
-      state: { ...state, winner: newPlayer },
+      state: { ...state, bag: newBag, winner: newPlayer },
       message: `${player.name} 购买了卡牌 ${cardId}，达到胜利条件！`
     };
   }
@@ -232,6 +243,7 @@ export function handleBuyCard(
       players: newPlayers,
       pyramid: finalPyramid,
       decks: finalDecks,
+      bag: newBag,
       currentPlayerIndex: opponentIndex
     },
     message: `${player.name} 购买了卡牌 ${cardId}`
@@ -293,5 +305,33 @@ export function handleTakeGold(
       currentPlayerIndex: opponentIndex
     },
     message: `${player.name} 拿取了黄金并保留了卡牌`
+  };
+}
+
+export function handleRefillBoard(state: GameState): { state: GameState; message: string } {
+  const player = state.players[state.currentPlayerIndex];
+  const opponentIndex = state.currentPlayerIndex === 0 ? 1 : 0;
+
+  if (state.bag.length === 0) {
+    return { state, message: "袋子为空，无法补充版图" };
+  }
+
+  const result = refillBoard(state.boardTokens, state.bag);
+
+  let opponent = state.players[opponentIndex];
+  opponent = { ...opponent, privileges: Math.min((opponent.privileges || 0) + 1, 3) };
+
+  const newPlayers: [Player, Player] = state.currentPlayerIndex === 0
+    ? [state.players[0], opponent]
+    : [opponent, state.players[1]];
+
+  return {
+    state: {
+      ...state,
+      players: newPlayers,
+      boardTokens: result.board,
+      bag: result.bag,
+    },
+    message: `${player.name} 补充了版图，对手获得 1 个特权`
   };
 }

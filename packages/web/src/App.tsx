@@ -2,7 +2,7 @@ import { useState } from "react";
 import Board from "./components/Board";
 import Pyramid from "./components/Pyramid";
 import PlayerInfo from "./components/PlayerInfo";
-import { createInitialState, handleTakeTokens, handleBuyCard, handlePass, handleTakeGold, handleDiscardTokens } from "@splendor/core";
+import { createInitialState, handleTakeTokens, handleBuyCard, handlePass, handleTakeGold, handleDiscardTokens, handleRefillBoard } from "@splendor/core";
 import { validateCellSelection } from "@splendor/core";
 import { getPlayerBonuses, getActualCost, canAfford } from "@splendor/core";
 import type { TokenType } from "@splendor/core";
@@ -177,6 +177,13 @@ export default function App() {
     setSelectedCells([]);
   };
 
+  const handleRefill = () => {
+    const result = handleRefillBoard(state);
+    setState(result.state);
+    setMessage(result.message);
+    setSelectedCells([]);
+  };
+
   const player = state.players[state.currentPlayerIndex];
   const bonuses = getPlayerBonuses(player);
 
@@ -258,10 +265,26 @@ export default function App() {
             <PlayerInfo player={state.players[0]} isCurrentPlayer={state.currentPlayerIndex === 0} onBuyReserved={handleBuyReserved} />
             <PlayerInfo player={state.players[1]} isCurrentPlayer={state.currentPlayerIndex === 1} onBuyReserved={handleBuyReserved} />
           </div>
+          {/*
+            && 是短路求值：从左到右，遇到 false 就停。
+            !state.winner && !goldMode 翻译成人话：
+            "游戏没结束 且 不在黄金模式" → 渲染按钮；否则什么都不渲染。
+            React 中 {false} 和 {null} 都不会产生任何 DOM。
+          */}
           {!state.winner && !goldMode && (
-            <button className="btn-pass" onClick={handleSkip}>
-              跳过回合
-            </button>
+            <div className="action-buttons">
+              <button className="btn-pass" onClick={handleSkip}>
+                跳过回合
+              </button>
+              <button
+                className="btn-pass"
+                onClick={handleRefill}
+                disabled={state.bag.length === 0}
+                title={state.bag.length === 0 ? "袋子为空" : `袋子中有 ${state.bag.length} 个标记`}
+              >
+                补充版图（对手+1特权）
+              </button>
+            </div>
           )}
         </>
       )}

@@ -1,6 +1,6 @@
 export type { GemColor, TokenType, Card, RoyalCard, Player, GameState } from "./types";
 export { shuffleDeck, getLevelDeck, dealCards } from "./card-pool";
-export { createBoard, getAdjacentTokens, validateTakePositions, validateCellSelection, takeTokens } from "./board";
+export { createBoard, getAdjacentTokens, validateTakePositions, validateCellSelection, takeTokens, refillBoard } from "./board";
 export { getPlayerBonuses, getActualCost, getTotalTokenCost, canAfford, purchaseCard } from "./purchase";
 export { getTotalPoints, getTotalCrowns, getPointsByGemColor, checkWinCondition, switchPlayer, checkRoyalCardEligibility, enforceTokenLimit } from "./game";
-export { createInitialState, handleTakeTokens, handleDiscardTokens, handleBuyCard, handlePass, handleTakeGold } from "./gameState";
+export { createInitialState, handleTakeTokens, handleDiscardTokens, handleBuyCard, handlePass, handleTakeGold, handleRefillBoard } from "./gameState";

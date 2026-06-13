@@ -127,3 +127,37 @@ export function takeTokens(
 
   return { taken, board: newBoard, opponentGetsPrivilege };
 }
+
+export function refillBoard(
+  board: (TokenType | null)[][],
+  bag: TokenType[]
+): { board: (TokenType | null)[][]; bag: TokenType[] } {
+  if (bag.length === 0) return { board, bag };
+
+  const shuffled = shuffleArray([...bag]);
+  const newBoard = board.map(row => [...row]);
+  const newBag: TokenType[] = [];
+
+  let tokenIndex = 0;
+  for (const [row, col] of SPIRAL_ORDER) {
+    if (newBoard[row][col] === null && tokenIndex < shuffled.length) {
+      newBoard[row][col] = shuffled[tokenIndex];
+      tokenIndex++;
+    }
+  }
+
+  for (let i = tokenIndex; i < shuffled.length; i++) {
+    newBag.push(shuffled[i]);
+  }
+
+  return { board: newBoard, bag: newBag };
+}
+
+function shuffleArray<T>(arr: T[]): T[] {
+  const shuffled = [...arr];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}

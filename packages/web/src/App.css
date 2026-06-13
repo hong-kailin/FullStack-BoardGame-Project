@@ -244,6 +244,18 @@
   color: var(--text-h);
 }
 
+.btn-pass:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 16px;
+}
+
 /* ========================================
    金字塔 Pyramid
    ======================================== */
