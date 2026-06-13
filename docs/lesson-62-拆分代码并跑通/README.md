@@ -60,9 +60,25 @@ export { createInitialState, handleTakeTokens, handleDiscardTokens, handleBuyCar
 
 **为什么需要这个文件？**
 
-因为 `package.json` 里写了 `"main": "./src/index.ts"`，外部 `import { ... } from "@splendor/core"` 时，Node.js 找的就是这个文件。
+如果没有 `index.ts`，外部要这样用：
 
-**类比**：这就像一栋楼的**大堂前台**。你想找 core 部门的任何人，不用跑到具体工位（`./board.ts`、`./purchase.ts`），直接去前台（`index.ts`），前台帮你找到对应的人。
+```ts
+import { Card, GameState } from "@splendor/core/src/types";
+import { createBoard } from "@splendor/core/src/board";
+import { purchaseCard } from "@splendor/core/src/purchase";
+```
+
+问题是：使用者必须知道 core 内部有哪些文件、每个函数在哪个文件里。而且 core 内部重构（比如把 `game.ts` 拆成两个文件），所有外部 import 路径都要跟着改。
+
+有了 `index.ts` 之后，外部统一写：
+
+```ts
+import { Card, GameState, createBoard, purchaseCard } from "@splendor/core";
+```
+
+使用者完全不需要知道 core 内部的文件结构。`package.json` 里的 `"main": "./src/index.ts"` 告诉 Node.js：当别人 `import "@splendor/core"` 时，去找这个文件。
+
+**类比 Python**：这就是 Python 包里 `__init__.py` 的作用。你在 `__init__.py` 里写 `from .board import create_board`，外部就能直接 `from my_package import create_board`，不需要写 `from my_package.board import create_board`。`index.ts` 就是 TypeScript 的 `__init__.py`——包的"门面"，控制对外暴露什么、隐藏什么。
 
 ### 4. 修复 import 路径
 
@@ -88,7 +104,24 @@ import type { TokenType } from "@splendor/core";
 const db = new Database("server/data.db");
 ```
 
-现在 `index.ts` 在 `packages/server/src/` 下，`data.db` 在 `packages/server/` 下，相对路径变了。改成用 `import.meta.url` 动态计算：
+这里有个容易踩的坑：`"server/data.db"` 这个路径**不是相对于源代码文件的**，而是**相对于你运行命令的目录**（工作目录）。之前我们在项目根目录运行 `npm run server`，从根目录看 `server/data.db` 确实存在，所以能找到。
+
+拆分后，目录结构变了：
+
+```
+splendor-duel/               ← 工作目录（在这里运行 npm run server）
+├── packages/
+│   └── server/
+│       ├── src/
+│       │   └── index.ts     ← 代码搬到这了
+│       └── data.db          ← 数据库在这
+```
+
+如果代码还写 `new Database("server/data.db")`，Node.js 会从根目录找 `server/data.db`——但这个路径已经不存在了，数据库在 `packages/server/data.db`。
+
+你可能会想：那改成 `new Database("packages/server/data.db")` 不就行了？能用，但这依赖于"你一定在根目录运行命令"。换个目录运行就又崩了。
+
+更靠谱的做法是：**不管你在哪里运行命令，都从源代码文件自身的位置出发去找数据库**：
 
 ```ts
 import { resolve, dirname } from "node:path";
@@ -98,6 +131,8 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const db = new Database(resolve(__dirname, "..", "data.db"));
 ```
 
+逐行拆解：
+
 | 步骤 | 值 |
 |------|-----|
 | `import.meta.url` | `file:///.../packages/server/src/index.ts` |
@@ -105,7 +140,7 @@ const db = new Database(resolve(__dirname, "..", "data.db"));
 | `dirname(...)` | `/.../packages/server/src/` |
 | `resolve(__dirname, "..", "data.db")` | `/.../packages/server/data.db` |
 
-**类比**：不用"从我家出门左转第三个路口"（相对路径），而是用 GPS 坐标（绝对路径）。不管从哪启动程序，都能找到数据库文件。
+**类比 Python**：这就是 `Path(__file__).parent / ".." / "data.db"`。`__file__` 永远指向源代码文件自身的位置，不受工作目录影响。
 
 ### 6. 依赖拆分
 
