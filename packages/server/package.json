@@ -1,0 +1,14 @@
+{
+  "name": "@splendor/server",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx src/index.ts"
+  },
+  "dependencies": {
+    "@splendor/core": "*",
+    "better-sqlite3": "^12.10.0",
+    "express": "^5.2.1"
+  }
+}
