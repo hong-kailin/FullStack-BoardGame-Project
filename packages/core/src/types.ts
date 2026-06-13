@@ -61,4 +61,5 @@ export interface GameState {
   currentPlayerIndex: number;
   winner: Player | null;
   bag: TokenType[];
+  privilegesAvailable: number;
 }

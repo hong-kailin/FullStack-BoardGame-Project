@@ -2,7 +2,7 @@ import { useState } from "react";
 import Board from "./components/Board";
 import Pyramid from "./components/Pyramid";
 import PlayerInfo from "./components/PlayerInfo";
-import { createInitialState, handleTakeTokens, handleBuyCard, handlePass, handleTakeGold, handleDiscardTokens, handleRefillBoard } from "@splendor/core";
+import { createInitialState, handleTakeTokens, handleBuyCard, handlePass, handleTakeGold, handleDiscardTokens, handleRefillBoard, handleUsePrivilege } from "@splendor/core";
 import { validateCellSelection } from "@splendor/core";
 import { getPlayerBonuses, getActualCost, canAfford } from "@splendor/core";
 import type { TokenType } from "@splendor/core";
@@ -69,6 +69,7 @@ export default function App() {
   const [discardMode, setDiscardMode] = useState(false);
   const [discardNeeded, setDiscardNeeded] = useState(0);
   const [discardSelection, setDiscardSelection] = useState<Record<string, number>>({});
+  const [privilegeMode, setPrivilegeMode] = useState(false);
 
   if (!username) {
     return <AuthForm onLogin={setUsername} />;
@@ -76,6 +77,24 @@ export default function App() {
 
   const handleCellClick = (row: number, col: number) => {
     setError("");
+
+    if (privilegeMode) {
+      const token = state.boardTokens[row][col];
+      if (!token || token === "gold") {
+        setError("只能拿取非黄金标记");
+        return;
+      }
+      const result = handleUsePrivilege(state, [row, col]);
+      setState(result.state);
+      setPrivilegeMode(false);
+      if (result.needsDiscard > 0) {
+        setDiscardMode(true);
+        setDiscardNeeded(result.needsDiscard);
+        setDiscardSelection({});
+      }
+      setMessage(result.message);
+      return;
+    }
 
     const index = selectedCells.findIndex(([r, c]) => r === row && c === col);
     if (index !== -1) {
@@ -284,6 +303,18 @@ export default function App() {
               >
                 补充版图（对手+1特权）
               </button>
+              {player.privileges > 0 && (
+                <button
+                  className={`btn-pass ${privilegeMode ? "active" : ""}`}
+                  onClick={() => {
+                    setPrivilegeMode(!privilegeMode);
+                    setSelectedCells([]);
+                    setError(privilegeMode ? "" : "请点击版图上的一个非黄金标记");
+                  }}
+                >
+                  {privilegeMode ? "取消使用特权" : `使用特权 (${player.privileges})`}
+                </button>
+              )}
             </div>
           )}
         </>

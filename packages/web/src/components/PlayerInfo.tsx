@@ -59,6 +59,7 @@ export default function PlayerInfo({ player, isCurrentPlayer, onBuyReserved }: P
         <span>声望: {getTotalPoints(player)}</span>
         <span>王冠: {getTotalCrowns(player)}</span>
         <span>卡牌: {player.cards.length} 张</span>
+        <span>特权: {player.privileges}</span>
       </div>
       <div className="player-bonuses">奖励: {bonusDisplay || "无"}</div>
       {player.reservedCards.length > 0 && (

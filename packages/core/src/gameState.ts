@@ -38,7 +38,7 @@ export function createInitialState(): GameState {
         cards: [],
         royalCards: [],
         reservedCards: [],
-        privileges: 0
+        privileges: 1
       }
     ],
     boardTokens: board,
@@ -55,7 +55,8 @@ export function createInitialState(): GameState {
     availableRoyalCards: [],
     currentPlayerIndex: 0,
     winner: null,
-    bag: []
+    bag: [],
+    privilegesAvailable: 2
   };
 }
 
@@ -85,6 +86,34 @@ function findCardInPyramid(pyramid: Card[][], cardId: number): { level: number; 
   return null;
 }
 
+function givePrivilege(
+  state: GameState,
+  targetPlayerIndex: number
+): { players: [Player, Player]; privilegesAvailable: number } {
+  const opponentIndex = targetPlayerIndex === 0 ? 1 : 0;
+  const target = state.players[targetPlayerIndex];
+  const opponent = state.players[opponentIndex];
+
+  if (state.privilegesAvailable > 0) {
+    const newTarget = { ...target, privileges: Math.min(target.privileges + 1, 3) };
+    const newPlayers: [Player, Player] = targetPlayerIndex === 0
+      ? [newTarget, opponent]
+      : [opponent, newTarget];
+    return { players: newPlayers, privilegesAvailable: state.privilegesAvailable - 1 };
+  }
+
+  if (opponent.privileges > 0) {
+    const newOpponent = { ...opponent, privileges: opponent.privileges - 1 };
+    const newTarget = { ...target, privileges: Math.min(target.privileges + 1, 3) };
+    const newPlayers: [Player, Player] = targetPlayerIndex === 0
+      ? [newTarget, newOpponent]
+      : [newOpponent, newTarget];
+    return { players: newPlayers, privilegesAvailable: 0 };
+  }
+
+  return { players: state.players, privilegesAvailable: state.privilegesAvailable };
+}
+
 export function handleTakeTokens(
   state: GameState,
   positions: [number, number][]
@@ -104,8 +133,11 @@ export function handleTakeTokens(
 
   if (needsDiscard > 0) {
     let opponent = state.players[opponentIndex];
+    let privilegesAvailable = state.privilegesAvailable;
     if (result.opponentGetsPrivilege) {
-      opponent = { ...opponent, privileges: (opponent.privileges || 0) + 1 };
+      const privResult = givePrivilege(state, opponentIndex);
+      opponent = privResult.players[opponentIndex];
+      privilegesAvailable = privResult.privilegesAvailable;
     }
 
     const newPlayers: [Player, Player] = state.currentPlayerIndex === 0
@@ -117,6 +149,7 @@ export function handleTakeTokens(
         ...state,
         players: newPlayers,
         boardTokens: result.board,
+        privilegesAvailable,
       },
       message: `${player.name} 拿取了 ${result.taken.length} 个标记，标记超过 10 个，请选择要归还的标记`,
       needsDiscard
@@ -124,8 +157,11 @@ export function handleTakeTokens(
   }
 
   let opponent = state.players[opponentIndex];
+  let privilegesAvailable = state.privilegesAvailable;
   if (result.opponentGetsPrivilege) {
-    opponent = { ...opponent, privileges: (opponent.privileges || 0) + 1 };
+    const privResult = givePrivilege(state, opponentIndex);
+    opponent = privResult.players[opponentIndex];
+    privilegesAvailable = privResult.privilegesAvailable;
   }
 
   const newPlayers: [Player, Player] = state.currentPlayerIndex === 0
@@ -137,6 +173,7 @@ export function handleTakeTokens(
       ...state,
       players: newPlayers,
       boardTokens: result.board,
+      privilegesAvailable,
       currentPlayerIndex: opponentIndex
     },
     message: `${player.name} 拿取了 ${result.taken.length} 个标记`,
@@ -318,12 +355,11 @@ export function handleRefillBoard(state: GameState): { state: GameState; message
 
   const result = refillBoard(state.boardTokens, state.bag);
 
-  let opponent = state.players[opponentIndex];
-  opponent = { ...opponent, privileges: Math.min((opponent.privileges || 0) + 1, 3) };
+  const privResult = givePrivilege(state, opponentIndex);
 
   const newPlayers: [Player, Player] = state.currentPlayerIndex === 0
-    ? [state.players[0], opponent]
-    : [opponent, state.players[1]];
+    ? [state.players[0], privResult.players[opponentIndex]]
+    : [privResult.players[opponentIndex], state.players[1]];
 
   return {
     state: {
@@ -331,7 +367,53 @@ export function handleRefillBoard(state: GameState): { state: GameState; message
       players: newPlayers,
       boardTokens: result.board,
       bag: result.bag,
+      privilegesAvailable: privResult.privilegesAvailable,
     },
     message: `${player.name} 补充了版图，对手获得 1 个特权`
+  };
+}
+
+export function handleUsePrivilege(
+  state: GameState,
+  position: [number, number]
+): { state: GameState; message: string; needsDiscard: number } {
+  const player = state.players[state.currentPlayerIndex];
+
+  if (player.privileges <= 0) {
+    return { state, message: "没有可用的特权", needsDiscard: 0 };
+  }
+
+  const token = state.boardTokens[position[0]][position[1]];
+  if (!token || token === "gold") {
+    return { state, message: "该位置没有可拿取的非黄金标记", needsDiscard: 0 };
+  }
+
+  const newBoard = state.boardTokens.map(row => [...row]);
+  newBoard[position[0]][position[1]] = null;
+
+  const newPlayer = {
+    ...player,
+    tokens: { ...player.tokens },
+    privileges: player.privileges - 1,
+  };
+  newPlayer.tokens[token] = (newPlayer.tokens[token] || 0) + 1;
+
+  const totalTokens = Object.values(newPlayer.tokens).reduce((a, b) => a + b, 0);
+  const needsDiscard = totalTokens > 10 ? totalTokens - 10 : 0;
+
+  const newPlayers = [...state.players] as [Player, Player];
+  newPlayers[state.currentPlayerIndex] = newPlayer;
+
+  return {
+    state: {
+      ...state,
+      players: newPlayers,
+      boardTokens: newBoard,
+      privilegesAvailable: state.privilegesAvailable + 1,
+    },
+    message: needsDiscard > 0
+      ? `${player.name} 使用特权拿取了 1 个 ${token} 标记，标记超过 10 个，请选择要归还的标记`
+      : `${player.name} 使用特权拿取了 1 个 ${token} 标记`,
+    needsDiscard,
   };
 }
