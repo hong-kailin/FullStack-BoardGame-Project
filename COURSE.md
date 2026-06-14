@@ -17,11 +17,12 @@
 | 四 | 用户系统（后端入门） | 8 课 | 注册、登录、Session、数据库 |
 | 五 | Monorepo 拆分 | 3 课 | 将项目拆分为 core/web/server 子包 |
 | 五·五 | 完善游戏规则 | 4 课 | 补全标记回收、特权、卡牌能力、皇室卡牌 |
+| 五·六 | 游戏逻辑重构 | 5 课 | 卡牌数据 JSON 化、Action 类型、行动队列、测试、重构 |
 | 六 | AI 对手 | 4 课 | 可在浏览器中与 AI 对战 |
 | 七 | 在线联机 | 6 课 | 两人通过网络远程对战 |
 | 八 | 部署上线 | 2 课 | 让全世界都能玩 |
 
-**总计：约 78 课时**
+**总计：约 83 课时**
 
 ---
 
@@ -545,53 +546,129 @@ splendor-duel/
 ### 第 66 课：皇室卡牌
 
 - 添加 4 张皇室卡牌数据到 `card-pool.ts`
-- 修改 `checkRoyalCardEligibility`：检查王冠数 + 奖励颜色要求
-- 修改 `createInitialState`：初始化 `availableRoyalCards`
-- 前端：显示皇室卡牌区域，获得时展示
+- 修改 `checkRoyalCardEligibility`：检查王冠数门槛（3/6），返回新解锁的门槛列表
+- 实现 `handleClaimRoyalCard`：玩家从可用皇室卡牌中任选一张
+- 结算皇室卡牌的能力
+- 前端：显示皇室卡牌区域和选择面板，玩家信息面板显示王冠门槛状态
 - **产出**：皇室卡牌系统完整可用
+
+---
+
+# 阶段五·六：游戏逻辑重构（5 课时）
+
+> 当前游戏逻辑的问题已经很明显了：
+>
+> - **`handleBuyCard` 一个函数干了 10 件事**——校验、折扣、购买、皇室卡牌、胜利检查、金字塔补牌、能力结算、切换玩家，还带两个提前返回分支
+> - **每个操作返回结构不一样**——前端得为每个操作写不同的处理逻辑，`privilegeMode`、`goldMode`、`discardMode` 越堆越多
+> - **没有测试**——改一个规则心里没底，不知道会不会破坏其他规则
+> - **卡牌数据和代码混在一起**——改卡牌数据要改 TypeScript 代码
+>
+> 这一阶段的目标不是加新功能，而是**重构**：把游戏逻辑从"想到哪写到哪"变成"有条理、可测试、易扩展"。
+>
+> 核心思路两条线并行：
+> 1. **数据层**：卡牌数据抽成 JSON，代码只负责逻辑
+> 2. **逻辑层**：引入"行动队列"模式，每个操作返回后续待办行动列表，由统一执行器处理
+
+### 第 67 课：卡牌数据抽成 JSON
+
+- 在 `packages/core/data/` 下创建 `cards.json`，存放 24 张珠宝卡 + 4 张皇室卡数据
+- 手写 `validateCardData` 函数校验 JSON 数据（类型、范围、完整性）
+- 修改 `card-pool.ts` 改为读取 JSON 文件
+- 验证：编译通过，游戏功能不变
+- **产出**：卡牌数据和代码分离，改卡牌数据只需要改 JSON
+
+### 第 68 课：引入 Action 类型系统
+
+- 定义 `Action` 联合类型，统一表示所有玩家操作：
+  ```ts
+  type Action =
+    | { type: "take_tokens"; positions: [number, number][] }
+    | { type: "buy_card"; cardId: number }
+    | { type: "pass" }
+    | { type: "use_privilege"; position: [number, number] }
+    | { type: "take_gold"; position: [number, number]; cardId: number }
+    | { type: "claim_royal_card"; royalCardId: number }
+    | { type: "refill_board" }
+    | { type: "discard_tokens"; discards: TokenType[] }
+  ```
+- 定义 `PendingAction` 类型，表示系统自动触发的后续行动（如能力结算、切换玩家）
+- 所有现有的 `handleXxx` 函数改为接收 `Action` 参数
+- **产出**：所有游戏操作有了统一的类型表示
+
+### 第 69 课：实现行动队列（Action Queue）
+
+- 实现 `executeAction(state, action) → { state, pendingActions: PendingAction[] }`
+- 每个操作执行后返回后续待办行动列表。例如购买卡牌：
+  ```
+  handleBuyCard(state, action)
+    → { state: 购买后的状态, pendingActions: [
+        { type: "resolve_royal", ... },  // 如果有皇室卡牌门槛
+        { type: "check_win", ... },       // 检查胜利
+        { type: "resolve_ability", ... }, // 结算卡牌能力
+        { type: "switch_player" },        // 切换玩家
+      ]}
+  ```
+- 实现 `processPendingActions(state) → { state, pendingActions[] }`：递归处理待办行动
+- 前端只需调用 `executeAction`，然后循环处理 `pendingActions` 直到列表为空
+- **产出**：统一的行动执行器，`handleBuyCard` 不再需要自己处理"后续该做什么"
+
+### 第 70 课：引入 vitest 写规则测试
+
+- 安装 vitest，配置 `packages/core/vitest.config.ts`
+- 把核心规则写成测试用例，按规则组织：
+
+  ```
+  tests/
+    rules/
+      take-tokens.test.ts    # 拿取标记相关规则
+      buy-card.test.ts       # 购买卡牌相关规则
+      privileges.test.ts     # 特权系统规则
+      abilities.test.ts      # 卡牌能力规则
+      royal-cards.test.ts    # 皇室卡牌规则
+      win-conditions.test.ts # 胜利条件规则
+  ```
+
+- 每个测试对应一条自然语言规则，例如：
+  ```ts
+  // 规则：拿取 3 个同色标记 → 对手获得 1 个特权
+  it("对手获得特权 when 拿取 3 个同色标记", () => {
+    const state = createInitialState();
+    // ... 设置版图上有 3 个红色标记
+    const result = executeAction(state, { type: "take_tokens", positions: [...] });
+    expect(result.state.players[1].privileges).toBe(2); // 对手特权 +1
+  });
+  ```
+- **产出**：一组可重复执行的规则测试，`npm run test` 一键验证所有规则
+
+### 第 71 课：重构 handleBuyCard
+
+- 用行动队列重写 `handleBuyCard`，拆成多个小函数：
+  - `validatePurchase(state, action)` — 校验
+  - `applyPurchase(state, action)` — 执行购买（扣标记、加卡牌）
+  - `handlePyramidRefill(state)` — 金字塔补牌
+  - `resolveRoyalEligibility(state)` — 检查皇室卡牌
+  - `resolveAbility(state)` — 结算能力
+  - `switchPlayer(state)` — 切换玩家
+- `executeAction` 负责按顺序调用这些函数并生成 `pendingActions`
+- 前端：去掉 `privilegeMode`、`goldMode`、`discardMode` 等状态，改为根据 `pendingActions` 渲染对应 UI
+- **产出**：`handleBuyCard` 从 80 行降到每个小函数 10-15 行，前端模式状态消失
 
 ---
 
 # 阶段六：AI 对手（4 课时）
 
-> 游戏规则已完整，现在让计算机学会玩这个游戏。
+> 游戏规则已完整，代码结构也清晰了，现在让计算机学会玩这个游戏。
 >
-> AI 的核心思路：**枚举所有合法操作 → 评估每个操作的好坏 → 选最好的**。从随机乱选开始，逐步加入策略，最后让 AI 学会"思考"。
+> AI 的核心思路：**枚举所有合法操作 → 评估每个操作的好坏 → 选最好的**。从随机乱选开始，逐步加入策略。
 
-### 当前游戏状态回顾
+### 第 72 课：随机 AI
 
-AI 能看到完整的 `GameState`，包括：
-- 版图上的标记（5×5 网格，含空位）
-- 金字塔中的卡牌（3 个等级）
-- 双方玩家的标记、已购卡牌、保留卡牌、特权数
-- 当前回合玩家
-
-AI 需要从以下操作中选择一个：
-1. **拿取标记**：选 1-3 个相邻且共线的非黄金标记
-2. **使用特权**：放回特权拿标记
-3. **拿取黄金 + 保留卡牌**：拿 1 个黄金，从金字塔保留 1 张卡牌（最多 3 张）
-4. **购买卡牌**：从金字塔或保留区购买 1 张支付得起的卡牌
-5. **跳过回合**：什么都不做
-
-### 设计决策
-
-| 决策 | 选择 | 原因 |
-|------|------|------|
-| AI 代码位置 | `packages/core/src/ai.ts` | 纯游戏逻辑，枚举操作和评估都是纯函数 |
-| AI 运行位置 | `packages/server/` | 服务器调用 AI 函数，返回操作结果给前端 |
-| 操作类型 | 新增 `Action` 联合类型 | 统一表示五种操作，方便枚举和传递 |
-
----
-
-### 第 67 课：随机 AI
-
-- 定义 `Action` 类型（`TakeTokensAction | UsePrivilegeAction | TakeGoldAction | BuyCardAction | PassAction`）
-- 实现 `getValidActions(state)`：枚举当前玩家的所有合法操作
+- 利用已有的 `Action` 类型，实现 `getValidActions(state)`：枚举当前玩家的所有合法操作
 - 实现 `randomAI(state)`：从合法操作中随机选一个
 - 在终端测试：创建初始状态，连续调用 AI 看它能不能走完一局
 - **产出**：`packages/core/src/ai.ts`，AI 能随机做出合法操作
 
-### 第 68 课：贪心策略 AI
+### 第 73 课：贪心策略 AI
 
 - 给每种操作打分（越高越好）：
   - 购买卡牌：基础分 = 卡牌声望点 × 10 + 王冠 × 5，能触发皇室卡牌额外加分
@@ -602,7 +679,7 @@ AI 需要从以下操作中选择一个：
 - 对比随机 AI：贪心 AI 胜率明显更高
 - **产出**：`greedyAI` 函数，AI 有了"偏好"
 
-### 第 69 课：Web 中集成 AI
+### 第 74 课：Web 中集成 AI
 
 - 前端加"人机对战"按钮，创建游戏时选择模式
 - 新增 `POST /api/game/create` 和 `POST /api/game/action` 接口
@@ -611,7 +688,7 @@ AI 需要从以下操作中选择一个：
 - 游戏结束显示胜负
 - **产出**：浏览器里可以和 AI 对战
 
-### 第 70 课：进阶 AI 策略
+### 第 75 课：进阶 AI 策略
 
 - 向前看一步：模拟"我执行操作 A → 对手用贪心策略回应 → 评估此时我的局面"
 - 实现 `lookAheadAI(state)`：对每个操作，模拟对手最佳回应后的局面，选对自己最有利的
@@ -623,19 +700,19 @@ AI 需要从以下操作中选择一个：
 
 # 阶段七：在线联机（6 课时）
 
-### 第 71 课：从轮询开始
-### 第 72 课：引入 WebSocket
-### 第 73 课：房间系统
-### 第 74 课：联机对战流程
-### 第 75 课：匹配机制
-### 第 76 课：联机测试与优化
+### 第 76 课：从轮询开始
+### 第 77 课：引入 WebSocket
+### 第 78 课：房间系统
+### 第 79 课：联机对战流程
+### 第 80 课：匹配机制
+### 第 81 课：联机测试与优化
 
 ---
 
 # 阶段八：部署上线（2 课时）
 
-### 第 77 课：部署到服务器
-### 第 78 课：CI/CD 与监控
+### 第 82 课：部署到服务器
+### 第 83 课：CI/CD 与监控
 
 ---
 
