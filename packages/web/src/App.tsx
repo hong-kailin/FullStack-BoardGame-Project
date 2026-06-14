@@ -204,13 +204,13 @@ export default function App() {
   };
 
   const player = state.players[state.currentPlayerIndex];
-  const bonuses = getPlayerBonuses(player);
+  const { bonuses, wildBonus } = getPlayerBonuses(player);
 
   const canAffordCard = (cardId: number) => {
     for (const level of state.pyramid) {
       const card = level.find(c => c.id === cardId);
       if (card) {
-        const actualCost = getActualCost(card, bonuses);
+        const actualCost = getActualCost(card, bonuses, wildBonus);
         return canAfford(player, actualCost);
       }
     }
@@ -273,7 +273,7 @@ export default function App() {
                 <div className="royal-claim-points">{card.points} 分</div>
                 {card.ability && (
                   <div className="royal-claim-ability">
-                    {{ extra_turn: "🔄 额外回合", take_privilege: "⭐ 获得特权", take_from_opponent: "👊 抢夺标记", take_matching_token: "🎨 拿取同色" }[card.ability]}
+                    {{ extra_turn: "🔄 额外回合", take_privilege: "⭐ 获得特权", take_from_opponent: "👊 抢夺标记", take_matching_token: "🎨 拿取同色", copy_bonus: "📋 复制奖励" }[card.ability]}
                   </div>
                 )}
               </div>
@@ -314,7 +314,7 @@ export default function App() {
                         <div className="royal-points">{card.points} 分</div>
                         {card.ability && (
                           <div className="royal-ability">
-                            {{ extra_turn: "🔄 额外回合", take_privilege: "⭐ 获得特权", take_from_opponent: "👊 抢夺标记", take_matching_token: "🎨 拿取同色" }[card.ability]}
+                            {{ extra_turn: "🔄 额外回合", take_privilege: "⭐ 获得特权", take_from_opponent: "👊 抢夺标记", take_matching_token: "🎨 拿取同色", copy_bonus: "📋 复制奖励" }[card.ability]}
                           </div>
                         )}
                       </div>

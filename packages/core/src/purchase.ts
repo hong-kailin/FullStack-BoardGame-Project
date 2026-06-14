@@ -1,40 +1,45 @@
 import type { Card, Player, GemColor } from "./types";
 
-export function getPlayerBonuses(player: Player): Record<GemColor, number> {
+export function getPlayerBonuses(player: Player): { bonuses: Record<GemColor, number>; wildBonus: number } {
   const bonuses: Record<GemColor, number> = {
     red: 0, blue: 0, green: 0, white: 0, black: 0
   };
+  let wildBonus = 0;
 
   for (const card of player.cards) {
-    bonuses[card.gem] += card.bonusCount;
+    if (card.gem === "any") {
+      wildBonus += card.bonusCount;
+    } else if (card.gem) {
+      bonuses[card.gem] += card.bonusCount;
+    }
   }
 
-  return bonuses;
+  return { bonuses, wildBonus };
 }
 
 export function getActualCost(
   card: Card,
-  playerBonuses: Record<GemColor, number>
+  playerBonuses: Record<GemColor, number>,
+  wildBonus: number = 0
 ): Record<GemColor | "pearl", number> {
   const cost: Record<GemColor | "pearl", number> = {
     red: 0, blue: 0, green: 0, white: 0, black: 0, pearl: 0
   };
 
-  // "red", "blue", "green", "white", "black" as GemColor[]
-  // TypeScript 推断这个数组的类型是 string[]，但我们需要它被识别为 GemColor[]
-  // as GemColor[] 是类型断言，告诉 TS"这是一个 GemColor 数组"
-  // 这样下面用 color 作为索引访问 Record<GemColor, number> 时就不会报类型错误
-  // 如果不加 as GemColor[]，TS 会报错：string 不能作为 GemColor 的索引
   for (const color of ["red", "blue", "green", "white", "black"] as GemColor[]) {
-    // card.cost[color] || 0 — 如果 card.cost[color] 的值是 undefined 或 null（即卡牌费用中没有这个颜色），
-    // 就使用默认值 0。|| 是"逻辑或"运算符，在 JS/TS 中它的行为是：如果左边是 falsy（undefined/null/0/""/false），就返回右边。
-    // 同理 playerBonuses[color] || 0 — 如果玩家没有该颜色的奖励，就用 0。
-    // 类比：Python 的 card.cost.get(color, 0)
     const needed = card.cost[color] || 0;
     const bonus = playerBonuses[color] || 0;
     cost[color] = Math.max(0, needed - bonus);
   }
   cost.pearl = card.cost.pearl || 0;
+
+  let remainingWild = wildBonus;
+  for (const color of ["red", "blue", "green", "white", "black"] as GemColor[]) {
+    if (remainingWild <= 0) break;
+    const reduce = Math.min(cost[color], remainingWild);
+    cost[color] -= reduce;
+    remainingWild -= reduce;
+  }
 
   return cost;
 }

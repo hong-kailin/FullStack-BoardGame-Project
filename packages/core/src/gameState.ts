@@ -1,4 +1,4 @@
-import type { GameState, Player, TokenType, Card, CardAbility, GemColor } from "./types";
+import type { GameState, Player, TokenType, Card, CardAbility, BonusColor, GemColor } from "./types";
 import { shuffleDeck, getLevelDeck, getRoyalCards } from "./card-pool";
 import { createBoard, takeTokens, refillBoard } from "./board";
 import { checkWinCondition, checkRoyalCardEligibility } from "./game";
@@ -119,7 +119,7 @@ function givePrivilege(
 
 function resolveCardAbility(
   state: GameState,
-  card: { ability: CardAbility | null; gem?: GemColor }
+  card: { ability: CardAbility | null; gem?: BonusColor }
 ): { state: GameState; message: string } {
   if (!card.ability) return { state, message: "" };
 
@@ -161,9 +161,10 @@ function resolveCardAbility(
       };
     }
 
-    case "take_matching_token": {
-      if (!card.gem) return { state, message: "" };
-      const gemColor = card.gem;
+    case "take_matching_token":
+    case "copy_bonus": {
+      if (!card.gem || card.gem === "any") return { state, message: "" };
+      const gemColor = card.gem as GemColor;
       const newBoard = state.boardTokens.map(row => [...row]);
       for (let r = 0; r < 5; r++) {
         for (let c = 0; c < 5; c++) {
@@ -297,8 +298,8 @@ export function handleBuyCard(
 
   if (!card) return { state, message: `卡牌 ID ${cardId} 不存在` };
 
-  const bonuses = getPlayerBonuses(player);
-  const actualCost = getActualCost(card, bonuses);
+  const { bonuses, wildBonus } = getPlayerBonuses(player);
+  const actualCost = getActualCost(card, bonuses, wildBonus);
 
   if (!canAfford(player, actualCost)) {
     return { state, message: "宝石不足，无法购买该卡牌" };

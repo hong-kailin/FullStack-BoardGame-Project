@@ -18,22 +18,25 @@
 // 五种基础宝石颜色，也是卡牌上提供的"宝石奖励"的颜色
 export type GemColor = "red" | "blue" | "green" | "white" | "black";
 
+// 卡牌奖励颜色，包含"any"表示万能奖励
+export type BonusColor = GemColor | "any" | null;
+
 // 所有标记类型：五种基础宝石 + 珍珠 + 黄金（万能）
 export type TokenType = GemColor | "pearl" | "gold";
 
 // 卡牌能力类型
-export type CardAbility = "extra_turn" | "take_privilege" | "take_from_opponent" | "take_matching_token";
+export type CardAbility = "extra_turn" | "take_privilege" | "take_from_opponent" | "take_matching_token" | "copy_bonus";
 
 // 一张卡牌
 export interface Card {
-  id: number;                    // 唯一标识，1~24
-  level: number;                 // 卡牌等级 1/2/3，等级越高费用越高、分数越高
-  gem: GemColor;                 // 这张卡提供的宝石奖励颜色
-  points: number;                // 购买后获得的声望点数（胜利条件之一）
-  crowns: number;                // 王冠数量，集满 10 个王冠直接获胜
-  bonusCount: number;            // 奖励数量——购买后相当于持有了几个该颜色的"永久折扣"
-  cost: Record<GemColor | "pearl", number>;  // 购买费用，每种颜色/珍珠需要支付的数量
-  ability: CardAbility | null;   // 卡牌能力，购买后触发
+  id: number;
+  level: number;
+  gem: BonusColor;
+  points: number;
+  crowns: number;
+  bonusCount: number;
+  cost: Record<GemColor | "pearl", number>;
+  ability: CardAbility | null;
 }
 
 // 皇室卡牌：满足王冠数量条件时自动获得，提供额外声望点

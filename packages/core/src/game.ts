@@ -28,7 +28,9 @@ export function getPointsByGemColor(player: Player): Record<GemColor, number> {
   };
 
   for (const card of player.cards) {
-    points[card.gem] += card.points;
+    if (card.gem && card.gem !== "any") {
+      points[card.gem] += card.points;
+    }
   }
 
   return points;

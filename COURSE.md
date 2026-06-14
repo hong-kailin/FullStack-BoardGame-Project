@@ -571,9 +571,11 @@ splendor-duel/
 
 ### 第 67 课：卡牌数据抽成 JSON
 
-- 在 `packages/core/data/` 下创建 `cards.json`，存放 24 张珠宝卡 + 4 张皇室卡数据
+- 在 `packages/core/data/` 下创建 `cards.json`，存放 67 张珠宝卡 + 4 张皇室卡数据
+- 新增 `BonusColor` 类型（`GemColor | "any" | null`），处理万能奖励和无奖励卡牌
 - 手写 `validateCardData` 函数校验 JSON 数据（类型、范围、完整性）
 - 修改 `card-pool.ts` 改为读取 JSON 文件
+- 修改 `purchase.ts`：`getPlayerBonuses` 返回 `{ bonuses, wildBonus }`，`getActualCost` 使用万能奖励抵扣
 - 验证：编译通过，游戏功能不变
 - **产出**：卡牌数据和代码分离，改卡牌数据只需要改 JSON
 

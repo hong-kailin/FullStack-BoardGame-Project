@@ -5,6 +5,7 @@ const ABILITY_LABELS: Record<string, string> = {
   take_privilege: "⭐ 获得特权",
   take_from_opponent: "👊 抢夺标记",
   take_matching_token: "🎨 拿取同色",
+  copy_bonus: "📋 复制奖励",
 };
 
 interface PyramidProps {
@@ -15,13 +16,13 @@ interface PyramidProps {
 
 const GEM_COLORS: Record<string, string> = {
   red: "#e74c3c", blue: "#3498db", green: "#2ecc71",
-  white: "#ecf0f1", black: "#2c3e50",
+  white: "#ecf0f1", black: "#2c3e50", any: "#f39c12",
 };
 
 const GEM_EMOJI: Record<string, string> = {
   red: "🔴", blue: "🔵", green: "🟢",
   white: "⚪", black: "⚫",
-  pearl: "🦪",
+  pearl: "🦪", any: "🟡",
 };
 
 function formatCost(cost: Card["cost"]): string {
@@ -46,11 +47,11 @@ export default function Pyramid({ pyramid, onBuyCard, canAffordCard }: PyramidPr
               <div
                 key={card.id}
                 className={`pyramid-card ${affordable ? "affordable" : "unaffordable"}`}
-                style={{ borderColor: GEM_COLORS[card.gem] || "#999" }}
+                style={{ borderColor: GEM_COLORS[card.gem || ""] || "#999" }}
                 onClick={() => onBuyCard(card.id)}
               >
-                <div className="card-gem" style={{ color: GEM_COLORS[card.gem] }}>
-                  {card.gem}
+                <div className="card-gem" style={{ color: GEM_COLORS[card.gem || ""] || "#999" }}>
+                  {card.gem === "any" ? "万能" : card.gem || "—"}
                 </div>
                 <div className="card-points">{card.points} 分</div>
                 {card.crowns > 0 && <div className="card-crowns">👑x{card.crowns}</div>}
