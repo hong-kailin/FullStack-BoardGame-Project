@@ -72,3 +72,14 @@ export interface GameState {
   privilegesAvailable: number;
   pendingRoyalThresholds: number[];
 }
+
+// 玩家操作 — 统一表示所有可能的行动
+export type Action =
+  | { type: "take_tokens"; positions: [number, number][] }
+  | { type: "buy_card"; cardId: number }
+  | { type: "pass" }
+  | { type: "use_privilege"; position: [number, number] }
+  | { type: "take_gold"; position: [number, number]; cardId: number }
+  | { type: "claim_royal_card"; royalCardId: number }
+  | { type: "refill_board" }
+  | { type: "discard_tokens"; discards: TokenType[] };
