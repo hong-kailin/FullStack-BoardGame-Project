@@ -83,3 +83,6 @@ export type Action =
   | { type: "claim_royal_card"; royalCardId: number }
   | { type: "refill_board" }
   | { type: "discard_tokens"; discards: TokenType[] };
+
+// 系统自动触发的后续行动（与 Action 同类型，由 processPendingActions 处理）
+export type PendingAction = Action;

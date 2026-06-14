@@ -2,7 +2,7 @@ import { useState } from "react";
 import Board from "./components/Board";
 import Pyramid from "./components/Pyramid";
 import PlayerInfo from "./components/PlayerInfo";
-import { createInitialState, handleTakeTokens, handleBuyCard, handlePass, handleTakeGold, handleDiscardTokens, handleRefillBoard, handleUsePrivilege, handleClaimRoyalCard } from "@splendor/core";
+import { createInitialState, executeAction } from "@splendor/core";
 import { validateCellSelection } from "@splendor/core";
 import { getPlayerBonuses, getActualCost, canAfford } from "@splendor/core";
 import type { TokenType } from "@splendor/core";
@@ -84,7 +84,7 @@ export default function App() {
         setError("只能拿取非黄金标记");
         return;
       }
-      const result = handleUsePrivilege(state, [row, col]);
+      const result = executeAction(state, { type: "use_privilege", position: [row, col] });
       setState(result.state);
       setPrivilegeMode(false);
       if (result.needsDiscard > 0) {
@@ -115,7 +115,7 @@ export default function App() {
 
   const handleTake = () => {
     if (selectedCells.length === 0) return;
-    const result = handleTakeTokens(state, selectedCells);
+    const result = executeAction(state, { type: "take_tokens", positions: selectedCells });
     setState(result.state);
     setSelectedCells([]);
     if (result.needsDiscard > 0) {
@@ -152,7 +152,7 @@ export default function App() {
         discards.push(type as TokenType);
       }
     }
-    const result = handleDiscardTokens(state, discards);
+    const result = executeAction(state, { type: "discard_tokens", discards });
     setState(result.state);
     setMessage(result.message);
     setDiscardMode(false);
@@ -171,33 +171,33 @@ export default function App() {
 
   const handleBuy = (cardId: number) => {
     if (goldMode) {
-      const result = handleTakeGold(state, selectedCells[0], cardId);
+      const result = executeAction(state, { type: "take_gold", position: selectedCells[0], cardId });
       setState(result.state);
       setMessage(result.message);
       setSelectedCells([]);
       setGoldMode(false);
       return;
     }
-    const result = handleBuyCard(state, cardId);
+    const result = executeAction(state, { type: "buy_card", cardId });
     setState(result.state);
     setMessage(result.message);
   };
 
   const handleBuyReserved = (cardId: number) => {
-    const result = handleBuyCard(state, cardId);
+    const result = executeAction(state, { type: "buy_card", cardId });
     setState(result.state);
     setMessage(result.message);
   };
 
   const handleSkip = () => {
-    const result = handlePass(state);
+    const result = executeAction(state, { type: "pass" });
     setState(result.state);
     setMessage(result.message);
     setSelectedCells([]);
   };
 
   const handleRefill = () => {
-    const result = handleRefillBoard(state);
+    const result = executeAction(state, { type: "refill_board" });
     setState(result.state);
     setMessage(result.message);
     setSelectedCells([]);
@@ -265,7 +265,7 @@ export default function App() {
                 key={card.id}
                 className="royal-claim-card"
                 onClick={() => {
-                  const result = handleClaimRoyalCard(state, card.id);
+                  const result = executeAction(state, { type: "claim_royal_card", royalCardId: card.id });
                   setState(result.state);
                   setMessage(result.message);
                 }}
