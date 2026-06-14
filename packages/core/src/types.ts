@@ -41,7 +41,7 @@ export interface RoyalCard {
   id: number;                    // 唯一标识
   points: number;                // 获得后得到的声望点数
   crowns: number;                // 王冠数量（也会累加到玩家的总王冠数中）
-  requirement: Record<GemColor, number>;  // 需要玩家拥有的各颜色奖励数量
+  ability: CardAbility | null;   // 卡牌能力，获得后触发
 }
 
 // 一位玩家
@@ -53,6 +53,7 @@ export interface Player {
   royalCards: RoyalCard[];       // 已获得的皇室卡牌
   reservedCards: Card[];         // 保留的卡牌（从金字塔拿走暂存，最多 3 张）
   privileges: number;            // 特权次数——可以额外拿取一枚标记
+  claimedRoyalThresholds: number[];  // 已领取皇室卡牌的王冠门槛（如 [3] 表示已领过第 3 王冠的卡）
 }
 
 // 完整的游戏状态
@@ -66,4 +67,5 @@ export interface GameState {
   winner: Player | null;
   bag: TokenType[];
   privilegesAvailable: number;
+  pendingRoyalThresholds: number[];
 }

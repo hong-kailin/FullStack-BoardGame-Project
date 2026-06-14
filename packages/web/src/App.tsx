@@ -2,7 +2,7 @@ import { useState } from "react";
 import Board from "./components/Board";
 import Pyramid from "./components/Pyramid";
 import PlayerInfo from "./components/PlayerInfo";
-import { createInitialState, handleTakeTokens, handleBuyCard, handlePass, handleTakeGold, handleDiscardTokens, handleRefillBoard, handleUsePrivilege } from "@splendor/core";
+import { createInitialState, handleTakeTokens, handleBuyCard, handlePass, handleTakeGold, handleDiscardTokens, handleRefillBoard, handleUsePrivilege, handleClaimRoyalCard } from "@splendor/core";
 import { validateCellSelection } from "@splendor/core";
 import { getPlayerBonuses, getActualCost, canAfford } from "@splendor/core";
 import type { TokenType } from "@splendor/core";
@@ -256,7 +256,32 @@ export default function App() {
           )}
         </div>
       )}
-      {!discardMode && (
+      {state.pendingRoyalThresholds.length > 0 && (
+        <div className="royal-claim-panel">
+          <div className="message">达到 {state.pendingRoyalThresholds.join("/")} 王冠！请选择一张皇室卡牌：</div>
+          <div className="royal-claim-list">
+            {state.availableRoyalCards.map((card) => (
+              <div
+                key={card.id}
+                className="royal-claim-card"
+                onClick={() => {
+                  const result = handleClaimRoyalCard(state, card.id);
+                  setState(result.state);
+                  setMessage(result.message);
+                }}
+              >
+                <div className="royal-claim-points">{card.points} 分</div>
+                {card.ability && (
+                  <div className="royal-claim-ability">
+                    {{ extra_turn: "🔄 额外回合", take_privilege: "⭐ 获得特权", take_from_opponent: "👊 抢夺标记", take_matching_token: "🎨 拿取同色" }[card.ability]}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      {!discardMode && state.pendingRoyalThresholds.length === 0 && (
         <>
           <div className="game-layout">
             <div>
@@ -278,7 +303,26 @@ export default function App() {
                 )
               )}
             </div>
-            <Pyramid pyramid={state.pyramid} onBuyCard={handleBuy} canAffordCard={canAffordCard} />
+            <div>
+              <Pyramid pyramid={state.pyramid} onBuyCard={handleBuy} canAffordCard={canAffordCard} />
+              {state.availableRoyalCards.length > 0 && (
+                <div className="royal-cards">
+                  <h3>皇室卡牌</h3>
+                  <div className="royal-list">
+                    {state.availableRoyalCards.map((card) => (
+                      <div key={card.id} className="royal-card">
+                        <div className="royal-points">{card.points} 分</div>
+                        {card.ability && (
+                          <div className="royal-ability">
+                            {{ extra_turn: "🔄 额外回合", take_privilege: "⭐ 获得特权", take_from_opponent: "👊 抢夺标记", take_matching_token: "🎨 拿取同色" }[card.ability]}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
           <div className="players">
             <PlayerInfo player={state.players[0]} isCurrentPlayer={state.currentPlayerIndex === 0} onBuyReserved={handleBuyReserved} />

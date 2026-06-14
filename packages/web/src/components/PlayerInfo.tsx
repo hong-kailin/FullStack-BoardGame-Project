@@ -9,6 +9,8 @@ const ABILITY_LABELS: Record<string, string> = {
   take_matching_token: "🎨",
 };
 
+const ROYAL_THRESHOLDS = [3, 6];
+
 interface PlayerInfoProps {
   player: Player;
   isCurrentPlayer: boolean;
@@ -40,6 +42,7 @@ function formatCost(cost: Card["cost"]): string {
 
 export default function PlayerInfo({ player, isCurrentPlayer, onBuyReserved }: PlayerInfoProps) {
   const bonuses = getPlayerBonuses(player);
+  const crowns = getTotalCrowns(player);
 
   const tokenDisplay = Object.entries(player.tokens)
     .filter(([, amount]) => amount > 0)
@@ -64,9 +67,18 @@ export default function PlayerInfo({ player, isCurrentPlayer, onBuyReserved }: P
       <div className="player-tokens">{tokenDisplay || "无"}</div>
       <div className="player-stats">
         <span>声望: {getTotalPoints(player)}</span>
-        <span>王冠: {getTotalCrowns(player)}</span>
+        <span>王冠: {crowns}</span>
         <span>卡牌: {player.cards.length} 张</span>
         <span>特权: {player.privileges}</span>
+      </div>
+      <div className="player-royal-hint">
+        {ROYAL_THRESHOLDS.map(t => {
+          const reached = crowns >= t;
+          const claimed = player.claimedRoyalThresholds.includes(t);
+          if (claimed) return <span key={t} className="royal-hint claimed">👑x{t} ✅</span>;
+          if (reached) return <span key={t} className="royal-hint available">👑x{t} 可选!</span>;
+          return <span key={t} className="royal-hint locked">👑x{t}</span>;
+        })}
       </div>
       <div className="player-bonuses">奖励: {bonusDisplay || "无"}</div>
       {player.reservedCards.length > 0 && (

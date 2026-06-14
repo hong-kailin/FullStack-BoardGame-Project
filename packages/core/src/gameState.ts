@@ -1,5 +1,5 @@
-import type { GameState, Player, TokenType, Card } from "./types";
-import { shuffleDeck, getLevelDeck } from "./card-pool";
+import type { GameState, Player, TokenType, Card, CardAbility, GemColor } from "./types";
+import { shuffleDeck, getLevelDeck, getRoyalCards } from "./card-pool";
 import { createBoard, takeTokens, refillBoard } from "./board";
 import { checkWinCondition, checkRoyalCardEligibility } from "./game";
 import { getPlayerBonuses, getActualCost, canAfford, purchaseCard } from "./purchase";
@@ -29,7 +29,8 @@ export function createInitialState(): GameState {
         cards: [],
         royalCards: [],
         reservedCards: [],
-        privileges: 0
+        privileges: 0,
+        claimedRoyalThresholds: []
       },
       {
         id: 1,
@@ -38,7 +39,8 @@ export function createInitialState(): GameState {
         cards: [],
         royalCards: [],
         reservedCards: [],
-        privileges: 1
+        privileges: 1,
+        claimedRoyalThresholds: []
       }
     ],
     boardTokens: board,
@@ -52,11 +54,12 @@ export function createInitialState(): GameState {
       deck2.slice(4),
       deck3.slice(3),
     ],
-    availableRoyalCards: [],
+    availableRoyalCards: getRoyalCards(),
     currentPlayerIndex: 0,
     winner: null,
     bag: [],
-    privilegesAvailable: 2
+    privilegesAvailable: 2,
+    pendingRoyalThresholds: []
   };
 }
 
@@ -116,7 +119,7 @@ function givePrivilege(
 
 function resolveCardAbility(
   state: GameState,
-  card: Card
+  card: { ability: CardAbility | null; gem?: GemColor }
 ): { state: GameState; message: string } {
   if (!card.ability) return { state, message: "" };
 
@@ -159,6 +162,7 @@ function resolveCardAbility(
     }
 
     case "take_matching_token": {
+      if (!card.gem) return { state, message: "" };
       const gemColor = card.gem;
       const newBoard = state.boardTokens.map(row => [...row]);
       for (let r = 0; r < 5; r++) {
@@ -318,14 +322,51 @@ export function handleBuyCard(
     };
   }
 
-  const royalCard = checkRoyalCardEligibility(newPlayer, state.availableRoyalCards);
-  if (royalCard) {
-    newPlayer = { ...newPlayer, royalCards: [...newPlayer.royalCards, royalCard] };
+  const newThresholds = checkRoyalCardEligibility(newPlayer);
+  if (newThresholds.length > 0) {
+    const newPlayers = [...state.players] as [Player, Player];
+    newPlayers[state.currentPlayerIndex] = newPlayer;
+
+    const newPyramid = fromPyramid
+      ? state.pyramid.map(level => level.filter(c => c.id !== cardId))
+      : state.pyramid;
+
+    let finalPyramid = newPyramid;
+    let finalDecks = state.decks;
+    if (fromPyramid) {
+      const refill = refillPyramidLevel(newPyramid, state.decks, fromPyramid.level);
+      finalPyramid = refill.pyramid;
+      finalDecks = refill.decks;
+    }
+
+    return {
+      state: {
+        ...state,
+        players: newPlayers,
+        pyramid: finalPyramid,
+        decks: finalDecks,
+        bag: newBag,
+        pendingRoyalThresholds: newThresholds,
+      },
+      message: `${player.name} 达到了 ${newThresholds.join("/")} 王冠，请选择一张皇室卡牌！`
+    };
   }
 
   if (checkWinCondition(newPlayer)) {
+    const newPyramid = fromPyramid
+      ? state.pyramid.map(level => level.filter(c => c.id !== cardId))
+      : state.pyramid;
+
+    let finalPyramid = newPyramid;
+    let finalDecks = state.decks;
+    if (fromPyramid) {
+      const refill = refillPyramidLevel(newPyramid, state.decks, fromPyramid.level);
+      finalPyramid = refill.pyramid;
+      finalDecks = refill.decks;
+    }
+
     return {
-      state: { ...state, bag: newBag, winner: newPlayer },
+      state: { ...state, bag: newBag, pyramid: finalPyramid, decks: finalDecks, winner: newPlayer },
       message: `${player.name} 购买了卡牌 ${cardId}，达到胜利条件！`
     };
   }
@@ -495,5 +536,49 @@ export function handleUsePrivilege(
       ? `${player.name} 使用特权拿取了 1 个 ${token} 标记，标记超过 10 个，请选择要归还的标记`
       : `${player.name} 使用特权拿取了 1 个 ${token} 标记`,
     needsDiscard,
+  };
+}
+
+export function handleClaimRoyalCard(
+  state: GameState,
+  royalCardId: number
+): { state: GameState; message: string } {
+  const playerIndex = state.currentPlayerIndex;
+  const player = state.players[playerIndex];
+
+  const card = state.availableRoyalCards.find(c => c.id === royalCardId);
+  if (!card) return { state, message: "皇室卡牌不存在" };
+
+  const newPlayer = {
+    ...player,
+    royalCards: [...player.royalCards, card],
+    claimedRoyalThresholds: [...player.claimedRoyalThresholds],
+  };
+
+  for (const t of state.pendingRoyalThresholds) {
+    if (!newPlayer.claimedRoyalThresholds.includes(t)) {
+      newPlayer.claimedRoyalThresholds.push(t);
+    }
+  }
+
+  const newAvailable = state.availableRoyalCards.filter(c => c.id !== royalCardId);
+
+  const newPlayers = [...state.players] as [Player, Player];
+  newPlayers[playerIndex] = newPlayer;
+
+  const stateAfterClaim = {
+    ...state,
+    players: newPlayers,
+    availableRoyalCards: newAvailable,
+    pendingRoyalThresholds: [],
+  };
+
+  const abilityResult = resolveCardAbility(stateAfterClaim, card);
+
+  return {
+    state: abilityResult.state,
+    message: abilityResult.message
+      ? `${player.name} 获得了皇室卡牌（+${card.points}分）。${abilityResult.message}`
+      : `${player.name} 获得了皇室卡牌（+${card.points}分）`
   };
 }

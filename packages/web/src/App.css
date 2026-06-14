@@ -419,6 +419,44 @@
   margin-bottom: 8px;
 }
 
+.player-royal-hint {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.royal-hint {
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-weight: 600;
+}
+
+.royal-hint.claimed {
+  background: rgba(46, 204, 113, 0.15);
+  color: #2ecc71;
+  border: 1px solid rgba(46, 204, 113, 0.3);
+}
+
+.royal-hint.available {
+  background: rgba(241, 196, 15, 0.15);
+  color: #f39c12;
+  border: 1px solid rgba(241, 196, 15, 0.3);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.royal-hint.locked {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text);
+  opacity: 0.4;
+  border: 1px solid var(--border);
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
 /* --- 已购买卡牌 --- */
 .owned-cards {
   margin-top: 10px;
@@ -564,6 +602,103 @@
   border-color: #e74c3c;
   background: rgba(231, 76, 60, 0.1);
   box-shadow: 0 0 0 2px rgba(231, 76, 60, 0.2);
+}
+
+/* ========================================
+   皇室卡牌
+   ======================================== */
+
+.royal-cards {
+  margin-top: 16px;
+  background: linear-gradient(135deg, rgba(241, 196, 15, 0.08), rgba(243, 156, 18, 0.03));
+  border: 1px solid rgba(241, 196, 15, 0.3);
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.royal-cards h3 {
+  margin: 0 0 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #f39c12;
+  text-align: center;
+}
+
+.royal-list {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.royal-card {
+  border: 2px solid #f39c12;
+  border-radius: 10px;
+  padding: 10px;
+  width: 120px;
+  font-size: 12px;
+  text-align: center;
+  background: var(--bg);
+  box-shadow: 0 2px 8px rgba(241, 196, 15, 0.1);
+}
+
+.royal-points {
+  font-size: 20px;
+  font-weight: 800;
+  color: #f39c12;
+}
+
+.royal-ability {
+  font-size: 11px;
+  margin-top: 4px;
+  color: #f39c12;
+  font-weight: 600;
+}
+
+/* --- 皇室卡牌选择面板 --- */
+.royal-claim-panel {
+  background: linear-gradient(135deg, rgba(241, 196, 15, 0.1), rgba(243, 156, 18, 0.05));
+  border: 2px solid #f39c12;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.royal-claim-list {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 12px;
+}
+
+.royal-claim-card {
+  border: 2px solid #f39c12;
+  border-radius: 10px;
+  padding: 16px;
+  width: 130px;
+  cursor: pointer;
+  background: var(--bg);
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+.royal-claim-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(241, 196, 15, 0.3);
+  background: rgba(241, 196, 15, 0.05);
+}
+
+.royal-claim-points {
+  font-size: 24px;
+  font-weight: 800;
+  color: #f39c12;
+}
+
+.royal-claim-ability {
+  font-size: 13px;
+  margin-top: 6px;
+  color: #f39c12;
+  font-weight: 600;
 }
 
 /* ========================================

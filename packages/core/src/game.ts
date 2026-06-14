@@ -1,4 +1,4 @@
-import type { Player, GameState, RoyalCard, GemColor } from "./types";
+import type { Player, GameState, GemColor } from "./types";
 
 export function getTotalPoints(player: Player): number {
   let total = 0;
@@ -54,17 +54,19 @@ export function switchPlayer(state: GameState): GameState {
 }
 
 export function checkRoyalCardEligibility(
-  player: Player,
-  availableRoyalCards: RoyalCard[]
-): RoyalCard | null {
+  player: Player
+): number[] {
   const crowns = getTotalCrowns(player);
-  const royalIndex = crowns === 3 ? 0 : crowns === 6 ? 1 : -1;
+  const newThresholds: number[] = [];
 
-  if (royalIndex >= 0 && royalIndex < availableRoyalCards.length) {
-    return availableRoyalCards[royalIndex];
+  if (crowns >= 3 && !player.claimedRoyalThresholds.includes(3)) {
+    newThresholds.push(3);
+  }
+  if (crowns >= 6 && !player.claimedRoyalThresholds.includes(6)) {
+    newThresholds.push(6);
   }
 
-  return null;
+  return newThresholds;
 }
 
 export function enforceTokenLimit(player: Player): Player {

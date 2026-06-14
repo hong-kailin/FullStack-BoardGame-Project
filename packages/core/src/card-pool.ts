@@ -1,4 +1,4 @@
-import type { Card } from "./types";
+import type { Card, RoyalCard } from "./types";
 
 const level1Cards: Card[] = [
   { id: 1, level: 1, gem: "red", points: 1, crowns: 0, bonusCount: 1, cost: { red: 0, blue: 0, green: 0, white: 0, black: 0, pearl: 3 }, ability: null },
@@ -33,6 +33,13 @@ const level3Cards: Card[] = [
   { id: 24, level: 3, gem: "black", points: 5, crowns: 2, bonusCount: 1, cost: { red: 0, blue: 0, green: 4, white: 4, black: 0, pearl: 2 }, ability: "take_matching_token" },
 ];
 
+const royalCards: RoyalCard[] = [
+  { id: 101, points: 2, crowns: 0, ability: "take_privilege" },
+  { id: 102, points: 2, crowns: 0, ability: "extra_turn" },
+  { id: 103, points: 2, crowns: 0, ability: "take_from_opponent" },
+  { id: 104, points: 3, crowns: 0, ability: null },
+];
+
 export function getLevelDeck(level: number): Card[] {
   switch (level) {
     // [...level1Cards] 是数组展开（spread operator），创建一个新数组，内容和 level1Cards 完全一样
@@ -59,4 +66,8 @@ export function dealCards<T>(deck: T[], count: number): { dealt: T[]; remaining:
     dealt: deck.slice(0, count),
     remaining: deck.slice(count)
   };
+}
+
+export function getRoyalCards(): RoyalCard[] {
+  return [...royalCards];
 }
