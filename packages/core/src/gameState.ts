@@ -114,6 +114,77 @@ function givePrivilege(
   return { players: state.players, privilegesAvailable: state.privilegesAvailable };
 }
 
+function resolveCardAbility(
+  state: GameState,
+  card: Card
+): { state: GameState; message: string } {
+  if (!card.ability) return { state, message: "" };
+
+  const playerIndex = state.currentPlayerIndex;
+  const opponentIndex = playerIndex === 0 ? 1 : 0;
+  const player = state.players[playerIndex];
+  const opponent = state.players[opponentIndex];
+
+  switch (card.ability) {
+    case "extra_turn":
+      return { state, message: "获得额外回合！" };
+
+    case "take_privilege": {
+      const privResult = givePrivilege(state, playerIndex);
+      return {
+        state: { ...state, players: privResult.players, privilegesAvailable: privResult.privilegesAvailable },
+        message: "获得 1 个特权！"
+      };
+    }
+
+    case "take_from_opponent": {
+      const nonGoldTokens = (Object.keys(opponent.tokens) as TokenType[]).filter(
+        t => t !== "gold" && (opponent.tokens[t] || 0) > 0
+      );
+      if (nonGoldTokens.length === 0) {
+        return { state, message: "对手没有可拿取的标记" };
+      }
+      const takenType = nonGoldTokens[Math.floor(Math.random() * nonGoldTokens.length)];
+      const newPlayer = { ...player, tokens: { ...player.tokens } };
+      newPlayer.tokens[takenType] = (newPlayer.tokens[takenType] || 0) + 1;
+      const newOpponent = { ...opponent, tokens: { ...opponent.tokens } };
+      newOpponent.tokens[takenType] = Math.max(0, (newOpponent.tokens[takenType] || 0) - 1);
+      const newPlayers: [Player, Player] = playerIndex === 0
+        ? [newPlayer, newOpponent]
+        : [newOpponent, newPlayer];
+      return {
+        state: { ...state, players: newPlayers },
+        message: `从对手处拿取了 1 个 ${takenType} 标记！`
+      };
+    }
+
+    case "take_matching_token": {
+      const gemColor = card.gem;
+      const newBoard = state.boardTokens.map(row => [...row]);
+      for (let r = 0; r < 5; r++) {
+        for (let c = 0; c < 5; c++) {
+          if (newBoard[r][c] === gemColor) {
+            newBoard[r][c] = null;
+            const newPlayer = { ...player, tokens: { ...player.tokens } };
+            newPlayer.tokens[gemColor] = (newPlayer.tokens[gemColor] || 0) + 1;
+            const newPlayers: [Player, Player] = playerIndex === 0
+              ? [newPlayer, opponent]
+              : [opponent, newPlayer];
+            return {
+              state: { ...state, players: newPlayers, boardTokens: newBoard },
+              message: `拿取了 1 个 ${gemColor} 标记！`
+            };
+          }
+        }
+      }
+      return { state, message: `版图上没有 ${gemColor} 标记可拿取` };
+    }
+
+    default:
+      return { state, message: "" };
+  }
+}
+
 export function handleTakeTokens(
   state: GameState,
   positions: [number, number][]
@@ -274,16 +345,25 @@ export function handleBuyCard(
   const newPlayers = [...state.players] as [Player, Player];
   newPlayers[state.currentPlayerIndex] = newPlayer;
 
+  const stateAfterPurchase = {
+    ...state,
+    players: newPlayers,
+    pyramid: finalPyramid,
+    decks: finalDecks,
+    bag: newBag,
+  };
+
+  const abilityResult = resolveCardAbility(stateAfterPurchase, card);
+  const isExtraTurn = card.ability === "extra_turn";
+
   return {
     state: {
-      ...state,
-      players: newPlayers,
-      pyramid: finalPyramid,
-      decks: finalDecks,
-      bag: newBag,
-      currentPlayerIndex: opponentIndex
+      ...abilityResult.state,
+      currentPlayerIndex: isExtraTurn ? state.currentPlayerIndex : opponentIndex
     },
-    message: `${player.name} 购买了卡牌 ${cardId}`
+    message: abilityResult.message
+      ? `${player.name} 购买了卡牌 ${cardId}。${abilityResult.message}`
+      : `${player.name} 购买了卡牌 ${cardId}`
   };
 }
 

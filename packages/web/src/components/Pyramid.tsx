@@ -1,5 +1,12 @@
 import type { Card } from "@splendor/core";
 
+const ABILITY_LABELS: Record<string, string> = {
+  extra_turn: "🔄 额外回合",
+  take_privilege: "⭐ 获得特权",
+  take_from_opponent: "👊 抢夺标记",
+  take_matching_token: "🎨 拿取同色",
+};
+
 interface PyramidProps {
   pyramid: Card[][];
   onBuyCard: (cardId: number) => void;
@@ -47,6 +54,7 @@ export default function Pyramid({ pyramid, onBuyCard, canAffordCard }: PyramidPr
                 </div>
                 <div className="card-points">{card.points} 分</div>
                 {card.crowns > 0 && <div className="card-crowns">👑x{card.crowns}</div>}
+                {card.ability && <div className="card-ability">{ABILITY_LABELS[card.ability]}</div>}
                 <div className="card-cost">{formatCost(card.cost)}</div>
               </div>
               );

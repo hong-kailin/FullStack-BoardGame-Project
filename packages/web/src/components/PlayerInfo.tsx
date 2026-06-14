@@ -2,6 +2,13 @@ import type { Player, Card } from "@splendor/core";
 import { getPlayerBonuses } from "@splendor/core";
 import { getTotalPoints, getTotalCrowns } from "@splendor/core";
 
+const ABILITY_LABELS: Record<string, string> = {
+  extra_turn: "🔄",
+  take_privilege: "⭐",
+  take_from_opponent: "👊",
+  take_matching_token: "🎨",
+};
+
 interface PlayerInfoProps {
   player: Player;
   isCurrentPlayer: boolean;
@@ -79,6 +86,7 @@ export default function PlayerInfo({ player, isCurrentPlayer, onBuyReserved }: P
                 </div>
                 <div className="reserved-points">{card.points}分</div>
                 {card.crowns > 0 && <div className="reserved-crowns">👑x{card.crowns}</div>}
+                {card.ability && <div className="reserved-ability">{ABILITY_LABELS[card.ability]}</div>}
                 <div className="reserved-cost">{formatCost(card.cost)}</div>
               </div>
             ))}
