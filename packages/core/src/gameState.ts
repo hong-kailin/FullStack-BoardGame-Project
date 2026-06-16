@@ -59,7 +59,9 @@ export function createInitialState(): GameState {
     winner: null,
     bag: [],
     privilegesAvailable: 2,
-    pendingRoyalThresholds: []
+    pendingRoyalThresholds: [],
+    pendingGemCard: null,
+    pendingGemLevel: null,
   };
 }
 
@@ -161,8 +163,7 @@ function resolveCardAbility(
       };
     }
 
-    case "take_matching_token":
-    case "copy_bonus": {
+    case "take_matching_token": {
       if (!card.gem || card.gem === "any") return { state, message: "" };
       const gemColor = card.gem as GemColor;
       const newBoard = state.boardTokens.map(row => [...row]);
@@ -298,8 +299,8 @@ export function handleBuyCard(
 
   if (!card) return { state, message: `卡牌 ID ${cardId} 不存在` };
 
-  const { bonuses, wildBonus } = getPlayerBonuses(player);
-  const actualCost = getActualCost(card, bonuses, wildBonus);
+  const bonuses = getPlayerBonuses(player);
+  const actualCost = getActualCost(card, bonuses);
 
   if (!canAfford(player, actualCost)) {
     return { state, message: "宝石不足，无法购买该卡牌" };
@@ -320,6 +321,27 @@ export function handleBuyCard(
     newPlayer = {
       ...newPlayer,
       reservedCards: newPlayer.reservedCards.filter(c => c.id !== cardId)
+    };
+  }
+
+  if (card.gem === "any") {
+    const newPlayers = [...state.players] as [Player, Player];
+    newPlayers[state.currentPlayerIndex] = newPlayer;
+
+    const newPyramid = fromPyramid
+      ? state.pyramid.map(level => level.filter(c => c.id !== cardId))
+      : state.pyramid;
+
+    return {
+      state: {
+        ...state,
+        players: newPlayers,
+        pyramid: newPyramid,
+        bag: newBag,
+        pendingGemCard: card,
+        pendingGemLevel: fromPyramid ? fromPyramid.level : null,
+      },
+      message: `${player.name} 购买了万能奖励卡牌，请选择奖励颜色！`
     };
   }
 
@@ -581,5 +603,56 @@ export function handleClaimRoyalCard(
     message: abilityResult.message
       ? `${player.name} 获得了皇室卡牌（+${card.points}分）。${abilityResult.message}`
       : `${player.name} 获得了皇室卡牌（+${card.points}分）`
+  };
+}
+
+export function handleSetGemColor(
+  state: GameState,
+  color: GemColor
+): { state: GameState; message: string } {
+  const pendingCard = state.pendingGemCard;
+  if (!pendingCard) return { state, message: "没有待选择颜色的卡牌" };
+
+  const playerIndex = state.currentPlayerIndex;
+  const opponentIndex = playerIndex === 0 ? 1 : 0;
+  const player = state.players[playerIndex];
+
+  const updatedCard = { ...pendingCard, gem: color };
+  const newPlayer = {
+    ...player,
+    cards: player.cards.map(c => c.id === pendingCard.id ? updatedCard : c),
+  };
+
+  const newPlayers = [...state.players] as [Player, Player];
+  newPlayers[playerIndex] = newPlayer;
+
+  let finalPyramid = state.pyramid;
+  let finalDecks = state.decks;
+  if (state.pendingGemLevel !== null) {
+    const refill = refillPyramidLevel(state.pyramid, state.decks, state.pendingGemLevel);
+    finalPyramid = refill.pyramid;
+    finalDecks = refill.decks;
+  }
+
+  const stateAfterColor = {
+    ...state,
+    players: newPlayers,
+    pyramid: finalPyramid,
+    decks: finalDecks,
+    pendingGemCard: null,
+    pendingGemLevel: null,
+  };
+
+  const abilityResult = resolveCardAbility(stateAfterColor, updatedCard);
+  const isExtraTurn = updatedCard.ability === "extra_turn";
+
+  return {
+    state: {
+      ...abilityResult.state,
+      currentPlayerIndex: isExtraTurn ? playerIndex : opponentIndex,
+    },
+    message: abilityResult.message
+      ? `${player.name} 选择了 ${color} 奖励。${abilityResult.message}`
+      : `${player.name} 选择了 ${color} 奖励`,
   };
 }

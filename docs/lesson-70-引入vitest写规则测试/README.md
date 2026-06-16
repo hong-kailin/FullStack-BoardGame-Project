@@ -5,7 +5,8 @@
 - 理解"测试"是什么、为什么需要测试
 - 安装 vitest 测试框架
 - 学会设计测试用例：三段式（设置 → 执行 → 断言）
-- 为拿取标记和购买卡牌编写 8 个规则测试
+- 创建规则拆解文件（spec），将游戏规则细化为可测试的细则和测试点
+- 编写 33 个规则测试覆盖 5 个规则类别
 
 ---
 
@@ -23,31 +24,41 @@
 
 ### 2. 为什么现在需要测试？
 
-之前改代码全靠手动点页面验证：
-
-1. 启动前端
-2. 手动操作游戏（拿标记、买卡牌...）
-3. 看结果对不对
-4. 改代码
-5. 再重复 1-3
-
-效率低、容易漏、改多了心里没底。
+之前改代码全靠手动点页面验证，效率低、容易漏、改多了心里没底。
 
 有了测试后：
-
 - **改代码不怕改坏** — 跑一遍测试就知道有没有破坏现有规则
 - **规则即文档** — 测试用例本身就是规则的自然语言描述
 - **快速反馈** — 改完代码几秒就知道结果
 
-### 3. vitest 是什么？
+### 3. 规则拆解文件（spec）
 
-vitest 是一个 JavaScript/TypeScript 的测试框架。你可以把它理解为"一个能自动运行你的测试代码并告诉你结果是否正确的工具"。
+在写测试代码之前，先写**规则拆解文件**（`.md`），把游戏规则拆成两部分：
 
-类比：
-- vitest ≈ Python 的 pytest
-- vitest ≈ C++ 的 Google Test
+**规则细则**：每条规则一个编号，描述具体行为
+```
+### R-TT-03：3 同色触发对手特权
+- 拿取 3 个标记且颜色全部相同时，对手获得 1 个特权
+- 对手特权数 +1（受特权上限和转移规则约束）
+```
 
-### 4. 测试的三段式结构
+**测试点表格**：每个测试点对应一条规则，方便追踪
+```
+| 编号 | 测试点 | 对应规则 |
+|------|--------|----------|
+| TT-03 | 拿取 3 个红色标记 → 对手特权 +1 | R-TT-03 |
+```
+
+这样做的目的是：
+- **先想清楚再写代码** — 避免"想到哪写到哪"
+- **规则和测试一一对应** — 知道每个规则有没有被测试覆盖
+- **新人也能看懂** — 不用读代码就能知道游戏规则
+
+### 4. vitest 是什么？
+
+vitest 是一个 JavaScript/TypeScript 的测试框架。类比：vitest ≈ Python 的 pytest。
+
+### 5. 测试的三段式结构
 
 每个测试用例都遵循同样的结构：
 
@@ -57,27 +68,11 @@ vitest 是一个 JavaScript/TypeScript 的测试框架。你可以把它理解�
 3. 断言（Assert）— 检查结果是否符合预期
 ```
 
-比如测试"拿取 1 个红色标记"：
-
-```ts
-// 1. 设置：在版图 (2,2) 位置放一个红色标记
-board = setBoardToken(board, 2, 2, "red");
-
-// 2. 执行：玩家拿取这个标记
-const result = executeAction(state, { type: "take_tokens", positions: [[2, 2]] });
-
-// 3. 断言：版图上标记没了，玩家手里多了 1 个红
-expect(result.state.boardTokens[2][2]).toBeNull();
-expect(result.state.players[0].tokens.red).toBe(1);
-```
-
 ---
 
 ## 动手步骤
 
 ### 第一步：安装 vitest
-
-vitest 是一个 npm 包，需要安装到 `@splendor/core` 子包中：
 
 ```bash
 npm install -w @splendor/core -D vitest
@@ -85,9 +80,7 @@ npm install -w @splendor/core -D vitest
 
 参数说明：
 - `-w @splendor/core` — 安装到 core 子包（workspace）
-- `-D` — 安装到 devDependencies（只在开发时需要，生产环境不需要）
-
-安装完成后，`packages/core/package.json` 中会多出 `devDependencies` 字段。
+- `-D` — 安装到 devDependencies
 
 ### 第二步：配置 vitest
 
@@ -98,14 +91,10 @@ import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   test: {
-    include: ["tests/**/*.test.ts"],  // 告诉 vitest 去哪里找测试文件
+    include: ["tests/**/*.test.ts"],
   },
 });
 ```
-
-这个配置文件告诉 vitest：
-- 我们要运行测试
-- 测试文件在 `tests/` 目录下，文件名以 `.test.ts` 结尾
 
 ### 第三步：添加 test 脚本
 
@@ -117,70 +106,90 @@ export default defineConfig({
 }
 ```
 
-之后就可以用 `npm run test -w @splendor/core` 来运行测试了。
+之后用 `npm run test -w @splendor/core` 运行测试。
 
-### 第四步：设计测试辅助函数
+### 第四步：创建规则拆解文件
 
-游戏状态 `GameState` 有很多字段，而且 `createInitialState()` 包含随机洗牌。如果每个测试都从头创建完整状态，代码会非常冗长。
+在 `tests/rules/specs/` 下创建 `.md` 文件，每个规则类别一个文件。例如 `take-tokens.md`：
 
-所以我们需要一个**辅助函数** `createTestState`，它创建一个"空的、可控的"游戏状态，测试只需要告诉它"哪些地方不一样"。
+```markdown
+# 拿取标记规则拆解
+
+### R-TT-01：基本拿取
+- 玩家可以拿取 1 个非黄金标记
+- 标记从版图移除，加入玩家手中
+
+### R-TT-03：3 同色触发对手特权
+- 拿取 3 个标记且颜色全部相同时，对手获得 1 个特权
+
+## 测试点
+
+| 编号 | 测试点 | 对应规则 |
+|------|--------|----------|
+| TT-01 | 拿取 1 个红色标记 → 版图移除、玩家获得 | R-TT-01 |
+| TT-03 | 拿取 3 个红色标记 → 对手特权 +1 | R-TT-03 |
+```
+
+### 第五步：设计测试辅助函数
+
+游戏状态 `GameState` 有很多字段，而且 `createInitialState()` 包含随机洗牌。所以需要辅助函数创建可控状态：
 
 ```ts
 // 创建一个空的游戏状态，所有字段都有默认值
 const state = createTestState();
 
-// 创建一个自定义的游戏状态，覆盖某些字段
+// 覆盖某些字段
 const state = createTestState({
   boardTokens: 自定义版图,
   players: 自定义玩家数据,
 });
 ```
 
-这就是"默认值 + 覆盖"模式——类似 React 的 `useState(initialState)` 或 Python 的 `defaultdict`。
-
-另外还需要一个 `setBoardToken` 函数，用来在版图的指定位置放一个标记：
+`makeCard` 和 `makePlayer` 辅助函数让你不用写全所有字段：
 
 ```ts
-let board = createTestState().boardTokens;
-board = setBoardToken(board, 2, 2, "red");  // 在 (2,2) 放红色标记
+const card = makeCard({ id: 1, cost: { red: 3 }, points: 1 });
+const player = makePlayer({ id: 0, tokens: { red: 3 } });
 ```
 
-### 第五步：编写测试文件
+### 第六步：编写测试文件
 
-测试文件放在 `packages/core/tests/rules/` 目录下，按规则类别分文件：
+测试文件放在 `packages/core/tests/rules/` 下，每个 spec 对应一个 `.test.ts` 文件：
 
 ```
 tests/
   helpers.ts                  # 测试辅助函数
+  specs/
+    take-tokens.md            # 规则拆解文件
+    buy-card.md
+    privileges.md
+    abilities.md
+    royal-cards.md
   rules/
-    take-tokens.test.ts       # 拿取标记相关规则
-    buy-card.test.ts          # 购买卡牌相关规则
+    take-tokens.test.ts       # 7 个测试
+    buy-card.test.ts          # 10 个测试
+    privileges.test.ts        # 6 个测试
+    abilities.test.ts         # 6 个测试
+    royal-cards.test.ts       # 4 个测试
 ```
 
 每个测试文件的结构：
 
 ```ts
-import { describe, it, expect } from "vitest";  // 引入测试工具
-import { executeAction } from "../../src/action.ts";  // 引入要测试的函数
-import { createTestState, setBoardToken } from "../helpers.ts";  // 引入辅助函数
+import { describe, it, expect } from "vitest";
+import { executeAction } from "../../src/action.ts";
+import { createTestState, setBoardToken, makeCard, makePlayer } from "../helpers.ts";
 
-describe("拿取标记", () => {     // describe = 测试分组，把相关的测试放在一起
-  it("拿取 1 个非黄金标记", () => {  // it = 一个具体的测试用例
+describe("拿取标记", () => {
+  it("TT-01：拿取 1 个红色标记 → 版图移除、玩家获得", () => {
     // 设置 → 执行 → 断言
-  });
-
-  it("拿取 3 个同色标记 → 对手获得 1 个特权", () => {
-    // ...
   });
 });
 ```
 
-`describe` 和 `it` 是 vitest 提供的全局函数：
-- `describe("名称", fn)` — 把多个相关测试分组
-- `it("描述", fn)` — 一个具体的测试用例，描述用自然语言写清楚"测什么"
-- `expect(实际值).toBe(期望值)` — 断言实际值是否等于期望值
+测试编号（TT-01）和 spec 中的测试点编号一一对应，方便追溯。
 
-### 第六步：运行测试
+### 第七步：运行测试
 
 ```bash
 npm run test -w @splendor/core
@@ -189,16 +198,9 @@ npm run test -w @splendor/core
 输出示例：
 
 ```
-✓ 拿取标记 > 拿取 1 个非黄金标记
-✓ 拿取标记 > 拿取 3 个同色标记 → 对手获得 1 个特权
-✓ 购买卡牌 > 宝石足够 → 购买成功
-...
-
-Test Files  2 passed (2)
-Tests  8 passed (8)
+ Test Files  5 passed (5)
+      Tests  33 passed (33)
 ```
-
-绿色勾表示测试通过。如果有测试失败，vitest 会告诉你哪个测试失败了、期望值是什么、实际值是什么。
 
 ---
 
@@ -208,15 +210,23 @@ Tests  8 passed (8)
 |------|------|
 | `packages/core/vitest.config.ts` | **新建**，vitest 配置 |
 | `packages/core/package.json` | 新增 `"test": "vitest run"` 脚本 |
-| `packages/core/tests/helpers.ts` | **新建**，`createTestState` 和 `setBoardToken` |
-| `packages/core/tests/rules/take-tokens.test.ts` | **新建**，5 个拿取标记规则测试 |
-| `packages/core/tests/rules/buy-card.test.ts` | **新建**，3 个购买卡牌规则测试 |
+| `packages/core/tests/helpers.ts` | **新建**，`createTestState`、`setBoardToken`、`makeCard`、`makePlayer` |
+| `packages/core/tests/rules/specs/take-tokens.md` | **新建**，拿取标记规则拆解（7 条细则，8 个测试点） |
+| `packages/core/tests/rules/specs/buy-card.md` | **新建**，购买卡牌规则拆解（8 条细则，10 个测试点） |
+| `packages/core/tests/rules/specs/privileges.md` | **新建**，特权系统规则拆解（4 条细则，6 个测试点） |
+| `packages/core/tests/rules/specs/abilities.md` | **新建**，卡牌能力规则拆解（4 条细则，6 个测试点） |
+| `packages/core/tests/rules/specs/royal-cards.md` | **新建**，皇室卡牌规则拆解（4 条细则，4 个测试点） |
+| `packages/core/tests/rules/take-tokens.test.ts` | **新建**，7 个测试覆盖所有 TT 测试点 |
+| `packages/core/tests/rules/buy-card.test.ts` | **新建**，10 个测试覆盖所有 BC 测试点 |
+| `packages/core/tests/rules/privileges.test.ts` | **新建**，6 个测试覆盖所有 PR 测试点 |
+| `packages/core/tests/rules/abilities.test.ts` | **新建**，6 个测试覆盖所有 AB 测试点 |
+| `packages/core/tests/rules/royal-cards.test.ts` | **新建**，4 个测试覆盖所有 RC 测试点 |
 
 ### 验证方式
 
 ```bash
 npm run test -w @splendor/core
-# 输出：8 passed
+# 33 passed
 ```
 
 ---
@@ -224,7 +234,7 @@ npm run test -w @splendor/core
 ## 思考题
 
 1. 为什么 `createTestState` 要用 `...overrides` 而不是直接传全部参数？
-2. 如果测试需要验证"购买卡牌后金字塔补牌"，需要怎么设置初始状态？
+2. 规则拆解文件（spec）和测试文件是什么关系？
 3. 测试中对手特权数断言为 `toBe(2)`，为什么不是 `toBe(1)`？
 
 ---
@@ -233,17 +243,15 @@ npm run test -w @splendor/core
 
 ### 1. 为什么用 overrides？
 
-因为 `GameState` 有很多字段（players、boardTokens、pyramid、decks、bag...），如果每个测试都要传全部字段，测试代码会非常冗长且难以阅读。`overrides` 让测试只关注需要改动的字段，其他用默认值。
+因为 `GameState` 有很多字段，如果每个测试都要传全部字段，测试代码会非常冗长。`overrides` 让测试只关注需要改动的字段，其他用默认值。类比：你点奶茶时说"少糖去冰加珍珠"，而不是说全。
 
-类比：你点奶茶时说"少糖去冰加珍珠"，而不是说"正常糖、正常冰、加珍珠、不加椰果、不加布丁......"。
+### 2. spec 和测试文件的关系？
 
-### 2. 验证金字塔补牌？
-
-需要构造一个有牌库的 `decks` 字段，然后购买一张金字塔中的卡牌，断言金字塔中出现了新卡牌。当前测试没有覆盖这个场景，后续可以添加。
+spec 是"设计文档"，测试文件是"实现"。先写 spec 想清楚要测什么，再写测试代码。spec 中的每个测试点对应测试文件中的一个 `it`。这样你通过看 spec 就知道所有规则和对应的测试覆盖情况。
 
 ### 3. 为什么 toBe(2)？
 
-因为非起始玩家（玩家 B）初始就有 1 个特权（规则规定：起始玩家的对手获得 1 个特权）。所以触发"对手获得特权"后，特权数从 1 变为 2。
+因为非起始玩家（玩家 B）初始就有 1 个特权。所以触发"对手获得特权"后，特权数从 1 变为 2。
 
 ---
 

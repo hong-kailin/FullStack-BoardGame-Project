@@ -25,7 +25,7 @@ export type BonusColor = GemColor | "any" | null;
 export type TokenType = GemColor | "pearl" | "gold";
 
 // 卡牌能力类型
-export type CardAbility = "extra_turn" | "take_privilege" | "take_from_opponent" | "take_matching_token" | "copy_bonus";
+export type CardAbility = "extra_turn" | "take_privilege" | "take_from_opponent" | "take_matching_token";
 
 // 一张卡牌
 export interface Card {
@@ -71,6 +71,8 @@ export interface GameState {
   bag: TokenType[];
   privilegesAvailable: number;
   pendingRoyalThresholds: number[];
+  pendingGemCard: Card | null;
+  pendingGemLevel: number | null;
 }
 
 // 玩家操作 — 统一表示所有可能的行动
@@ -82,7 +84,8 @@ export type Action =
   | { type: "take_gold"; position: [number, number]; cardId: number }
   | { type: "claim_royal_card"; royalCardId: number }
   | { type: "refill_board" }
-  | { type: "discard_tokens"; discards: TokenType[] };
+  | { type: "discard_tokens"; discards: TokenType[] }
+  | { type: "set_gem_color"; cardId: number; color: GemColor };
 
 // 系统自动触发的后续行动（与 Action 同类型，由 processPendingActions 处理）
 export type PendingAction = Action;

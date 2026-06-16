@@ -2,6 +2,7 @@ import type { GameState, Action, PendingAction } from "./types";
 import {
   handleTakeTokens, handleBuyCard, handlePass, handleUsePrivilege,
   handleTakeGold, handleClaimRoyalCard, handleRefillBoard, handleDiscardTokens,
+  handleSetGemColor,
 } from "./gameState";
 
 export function executeAction(
@@ -25,6 +26,8 @@ export function executeAction(
       return { ...handleRefillBoard(state), needsDiscard: 0, pendingActions: [] };
     case "discard_tokens":
       return { ...handleDiscardTokens(state, action.discards), needsDiscard: 0, pendingActions: [] };
+    case "set_gem_color":
+      return { ...handleSetGemColor(state, action.color), needsDiscard: 0, pendingActions: [] };
   }
 }
 

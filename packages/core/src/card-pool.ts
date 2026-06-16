@@ -12,7 +12,7 @@ function fillCost(cost: Record<string, unknown>): Record<GemColor | "pearl", num
 }
 
 function validateCardData(data: typeof cardsData): void {
-  const validAbilities: (CardAbility | null)[] = [null, "extra_turn", "take_privilege", "take_from_opponent", "take_matching_token", "copy_bonus"];
+  const validAbilities: (CardAbility | null)[] = [null, "extra_turn", "take_privilege", "take_from_opponent", "take_matching_token"];
   const validGems: string[] = ["red", "blue", "green", "white", "black", "any"];
 
   for (const card of data.jewelCards) {

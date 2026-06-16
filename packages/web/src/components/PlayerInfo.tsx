@@ -7,7 +7,6 @@ const ABILITY_LABELS: Record<string, string> = {
   take_privilege: "⭐",
   take_from_opponent: "👊",
   take_matching_token: "🎨",
-  copy_bonus: "📋",
 };
 
 const ROYAL_THRESHOLDS = [3, 6];
@@ -43,7 +42,7 @@ function formatCost(cost: Card["cost"]): string {
 }
 
 export default function PlayerInfo({ player, isCurrentPlayer, onBuyReserved }: PlayerInfoProps) {
-  const { bonuses, wildBonus } = getPlayerBonuses(player);
+  const bonuses = getPlayerBonuses(player);
   const crowns = getTotalCrowns(player);
 
   const tokenDisplay = Object.entries(player.tokens)
@@ -55,7 +54,6 @@ export default function PlayerInfo({ player, isCurrentPlayer, onBuyReserved }: P
     .filter(([, amount]) => amount > 0)
     .map(([color, amount]) => `${color}x${amount}`)
     .join(" ");
-  const wildDisplay = wildBonus > 0 ? `万能x${wildBonus}` : "";
 
   const cardsByColor: Record<string, Card[]> = {
     red: [], blue: [], green: [], white: [], black: [], any: [], none: [],
@@ -84,7 +82,7 @@ export default function PlayerInfo({ player, isCurrentPlayer, onBuyReserved }: P
           return <span key={t} className="royal-hint locked">👑x{t}</span>;
         })}
       </div>
-      <div className="player-bonuses">奖励: {bonusDisplay || "无"}{wildDisplay && ` | ${wildDisplay}`}</div>
+      <div className="player-bonuses">奖励: {bonusDisplay || "无"}</div>
       {player.reservedCards.length > 0 && (
         <div className="reserved-cards">
           <div className="reserved-label">保留卡牌:</div>

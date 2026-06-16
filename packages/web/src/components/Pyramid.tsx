@@ -5,7 +5,6 @@ const ABILITY_LABELS: Record<string, string> = {
   take_privilege: "⭐ 获得特权",
   take_from_opponent: "👊 抢夺标记",
   take_matching_token: "🎨 拿取同色",
-  copy_bonus: "📋 复制奖励",
 };
 
 interface PyramidProps {

@@ -1,26 +1,22 @@
 import type { Card, Player, GemColor } from "./types";
 
-export function getPlayerBonuses(player: Player): { bonuses: Record<GemColor, number>; wildBonus: number } {
+export function getPlayerBonuses(player: Player): Record<GemColor, number> {
   const bonuses: Record<GemColor, number> = {
     red: 0, blue: 0, green: 0, white: 0, black: 0
   };
-  let wildBonus = 0;
 
   for (const card of player.cards) {
-    if (card.gem === "any") {
-      wildBonus += card.bonusCount;
-    } else if (card.gem) {
+    if (card.gem && card.gem !== "any") {
       bonuses[card.gem] += card.bonusCount;
     }
   }
 
-  return { bonuses, wildBonus };
+  return bonuses;
 }
 
 export function getActualCost(
   card: Card,
-  playerBonuses: Record<GemColor, number>,
-  wildBonus: number = 0
+  playerBonuses: Record<GemColor, number>
 ): Record<GemColor | "pearl", number> {
   const cost: Record<GemColor | "pearl", number> = {
     red: 0, blue: 0, green: 0, white: 0, black: 0, pearl: 0
@@ -32,14 +28,6 @@ export function getActualCost(
     cost[color] = Math.max(0, needed - bonus);
   }
   cost.pearl = card.cost.pearl || 0;
-
-  let remainingWild = wildBonus;
-  for (const color of ["red", "blue", "green", "white", "black"] as GemColor[]) {
-    if (remainingWild <= 0) break;
-    const reduce = Math.min(cost[color], remainingWild);
-    cost[color] -= reduce;
-    remainingWild -= reduce;
-  }
 
   return cost;
 }

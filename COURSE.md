@@ -617,30 +617,28 @@ splendor-duel/
 ### 第 70 课：引入 vitest 写规则测试
 
 - 安装 vitest，配置 `packages/core/vitest.config.ts`
-- 把核心规则写成测试用例，按规则组织：
+- 创建规则拆解文件（`tests/rules/specs/*.md`），每个规则类别一个文件：
+  - 规则细则（R-xxx-nn 编号）
+  - 测试点（xxx-nn 编号）
+- 编写测试辅助函数：`createTestState`、`setBoardToken`、`makeCard`、`makePlayer`
+- 按规则拆解文件编写测试，覆盖所有测试点：
 
   ```
   tests/
-    rules/
-      take-tokens.test.ts    # 拿取标记相关规则
-      buy-card.test.ts       # 购买卡牌相关规则
-      privileges.test.ts     # 特权系统规则
-      abilities.test.ts      # 卡牌能力规则
-      royal-cards.test.ts    # 皇室卡牌规则
-      win-conditions.test.ts # 胜利条件规则
+    specs/
+      take-tokens.md     # 拿取标记规则拆解（7 细则，8 测试点）
+      buy-card.md        # 购买卡牌规则拆解（7 细则，9 测试点）
+      privileges.md      # 特权系统规则拆解（4 细则，6 测试点）
+      abilities.md       # 卡牌能力规则拆解（5 细则，6 测试点）
+      royal-cards.md     # 皇室卡牌规则拆解（4 细则，4 测试点）
+    take-tokens.test.ts  # 7 个测试
+    buy-card.test.ts     # 9 个测试
+    privileges.test.ts   # 6 个测试
+    abilities.test.ts    # 6 个测试
+    royal-cards.test.ts  # 4 个测试
   ```
 
-- 每个测试对应一条自然语言规则，例如：
-  ```ts
-  // 规则：拿取 3 个同色标记 → 对手获得 1 个特权
-  it("对手获得特权 when 拿取 3 个同色标记", () => {
-    const state = createInitialState();
-    // ... 设置版图上有 3 个红色标记
-    const result = executeAction(state, { type: "take_tokens", positions: [...] });
-    expect(result.state.players[1].privileges).toBe(2); // 对手特权 +1
-  });
-  ```
-- **产出**：一组可重复执行的规则测试，`npm run test` 一键验证所有规则
+- **产出**：5 个规则拆解文件 + 32 个测试，`npm run test` 一键验证
 
 ### 第 71 课：重构 handleBuyCard
 

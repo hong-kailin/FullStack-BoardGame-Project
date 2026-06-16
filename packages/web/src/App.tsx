@@ -204,13 +204,13 @@ export default function App() {
   };
 
   const player = state.players[state.currentPlayerIndex];
-  const { bonuses, wildBonus } = getPlayerBonuses(player);
+  const bonuses = getPlayerBonuses(player);
 
   const canAffordCard = (cardId: number) => {
     for (const level of state.pyramid) {
       const card = level.find(c => c.id === cardId);
       if (card) {
-        const actualCost = getActualCost(card, bonuses, wildBonus);
+        const actualCost = getActualCost(card, bonuses);
         return canAfford(player, actualCost);
       }
     }
@@ -273,7 +273,7 @@ export default function App() {
                 <div className="royal-claim-points">{card.points} 分</div>
                 {card.ability && (
                   <div className="royal-claim-ability">
-                    {{ extra_turn: "🔄 额外回合", take_privilege: "⭐ 获得特权", take_from_opponent: "👊 抢夺标记", take_matching_token: "🎨 拿取同色", copy_bonus: "📋 复制奖励" }[card.ability]}
+                    {{ extra_turn: "🔄 额外回合", take_privilege: "⭐ 获得特权", take_from_opponent: "👊 抢夺标记", take_matching_token: "🎨 拿取同色" }[card.ability]}
                   </div>
                 )}
               </div>
@@ -281,7 +281,28 @@ export default function App() {
           </div>
         </div>
       )}
-      {!discardMode && state.pendingRoyalThresholds.length === 0 && (
+      {state.pendingGemCard && (
+        <div className="gem-color-panel">
+          <div className="message">请选择万能奖励的颜色：</div>
+          <div className="gem-color-list">
+            {(["red", "blue", "green", "white", "black"] as const).map((color) => (
+              <div
+                key={color}
+                className="gem-color-option"
+                style={{ borderColor: { red: "#e74c3c", blue: "#3498db", green: "#2ecc71", white: "#ecf0f1", black: "#2c3e50" }[color] }}
+                onClick={() => {
+                  const result = executeAction(state, { type: "set_gem_color", cardId: state.pendingGemCard!.id, color });
+                  setState(result.state);
+                  setMessage(result.message);
+                }}
+              >
+                {{ red: "🔴 红色", blue: "🔵 蓝色", green: "🟢 绿色", white: "⚪ 白色", black: "⚫ 黑色" }[color]}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      {!discardMode && state.pendingRoyalThresholds.length === 0 && !state.pendingGemCard && (
         <>
           <div className="game-layout">
             <div>
@@ -314,7 +335,7 @@ export default function App() {
                         <div className="royal-points">{card.points} 分</div>
                         {card.ability && (
                           <div className="royal-ability">
-                            {{ extra_turn: "🔄 额外回合", take_privilege: "⭐ 获得特权", take_from_opponent: "👊 抢夺标记", take_matching_token: "🎨 拿取同色", copy_bonus: "📋 复制奖励" }[card.ability]}
+                            {{ extra_turn: "🔄 额外回合", take_privilege: "⭐ 获得特权", take_from_opponent: "👊 抢夺标记", take_matching_token: "🎨 拿取同色" }[card.ability]}
                           </div>
                         )}
                       </div>
