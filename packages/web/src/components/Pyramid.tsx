@@ -51,6 +51,7 @@ export default function Pyramid({ pyramid, onBuyCard, canAffordCard }: PyramidPr
               >
                 <div className="card-gem" style={{ color: GEM_COLORS[card.gem || ""] || "#999" }}>
                   {card.gem === "any" ? "万能" : card.gem || "—"}
+                  {card.bonusCount > 1 && <span className="card-bonus-count">x{card.bonusCount}</span>}
                 </div>
                 <div className="card-points">{card.points} 分</div>
                 {card.crowns > 0 && <div className="card-crowns">👑x{card.crowns}</div>}

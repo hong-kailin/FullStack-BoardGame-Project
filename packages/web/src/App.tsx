@@ -217,6 +217,17 @@ export default function App() {
     return false;
   };
 
+  const canAffordReserved = (cardId: number) => {
+    for (const p of state.players) {
+      const card = p.reservedCards.find(c => c.id === cardId);
+      if (card) {
+        const actualCost = getActualCost(card, bonuses);
+        return canAfford(player, actualCost);
+      }
+    }
+    return false;
+  };
+
   const isGoldSelected = selectedCells.length === 1 &&
     state.boardTokens[selectedCells[0][0]]?.[selectedCells[0][1]] === "gold";
 
@@ -348,8 +359,8 @@ export default function App() {
             </div>
           </div>
           <div className="players">
-            <PlayerInfo player={state.players[0]} isCurrentPlayer={state.currentPlayerIndex === 0} onBuyReserved={handleBuyReserved} />
-            <PlayerInfo player={state.players[1]} isCurrentPlayer={state.currentPlayerIndex === 1} onBuyReserved={handleBuyReserved} />
+            <PlayerInfo player={state.players[0]} isCurrentPlayer={state.currentPlayerIndex === 0} onBuyReserved={handleBuyReserved} canAffordReserved={canAffordReserved} />
+            <PlayerInfo player={state.players[1]} isCurrentPlayer={state.currentPlayerIndex === 1} onBuyReserved={handleBuyReserved} canAffordReserved={canAffordReserved} />
           </div>
           {/*
             && 是短路求值：从左到右，遇到 false 就停。

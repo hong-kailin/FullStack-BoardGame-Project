@@ -4,10 +4,18 @@ import { getTotalPoints, getTotalCrowns } from "@splendor/core";
 
 const ROYAL_THRESHOLDS = [3, 6];
 
+const ABILITY_LABELS: Record<string, string> = {
+  extra_turn: "🔄",
+  take_privilege: "⭐",
+  take_from_opponent: "👊",
+  take_matching_token: "🎨",
+};
+
 interface PlayerInfoProps {
   player: Player;
   isCurrentPlayer: boolean;
   onBuyReserved?: (cardId: number) => void;
+  canAffordReserved?: (cardId: number) => boolean;
 }
 
 const TOKEN_LABELS: Record<string, string> = {
@@ -27,7 +35,7 @@ const GEM_COLORS: Record<string, string> = {
   white: "#ecf0f1", black: "#2c3e50", any: "#f39c12",
 };
 
-export default function PlayerInfo({ player, isCurrentPlayer, onBuyReserved }: PlayerInfoProps) {
+export default function PlayerInfo({ player, isCurrentPlayer, onBuyReserved, canAffordReserved }: PlayerInfoProps) {
   const bonuses = getPlayerBonuses(player);
   const crowns = getTotalCrowns(player);
 
@@ -74,7 +82,8 @@ export default function PlayerInfo({ player, isCurrentPlayer, onBuyReserved }: P
           <div className="reserved-stack-inline-label">保留:</div>
           <div className="reserved-stack-inline-cards">
             {player.reservedCards.map((card) => (
-              <div key={card.id} className="reserved-stack-inline-card"
+              <div key={card.id}
+                className={`reserved-stack-inline-card ${isCurrentPlayer && canAffordReserved?.(card.id) ? "affordable" : ""}`}
                 style={{ borderColor: GEM_COLORS[card.gem || ""] || "#999" }}
                 onClick={() => onBuyReserved?.(card.id)}>
                 <span style={{ color: GEM_COLORS[card.gem || ""] || "#999" }}>
@@ -82,9 +91,18 @@ export default function PlayerInfo({ player, isCurrentPlayer, onBuyReserved }: P
                 </span>
                 <span>{card.points}分</span>
                 {card.crowns > 0 && <span>👑{card.crowns}</span>}
-                <span className="reserved-cost-hint">
-                  {Object.entries(card.cost).filter(([, v]) => v > 0).map(([c, v]) => `${c}x${v}`).join(" ")}
-                </span>
+                <div className="reserved-popup">
+                  <div className="popup-gem" style={{ color: GEM_COLORS[card.gem || ""] || "#999" }}>
+                    {card.gem === "any" ? "万能" : card.gem || "—"}
+                    {card.bonusCount > 1 && <span className="card-bonus-count">x{card.bonusCount}</span>}
+                  </div>
+                  <div className="popup-points">{card.points} 分</div>
+                  {card.crowns > 0 && <div className="popup-crowns">👑x{card.crowns}</div>}
+                  {card.ability && <div className="popup-ability">{ABILITY_LABELS[card.ability]}</div>}
+                  <div className="popup-cost">
+                    {Object.entries(card.cost).filter(([, v]) => v > 0).map(([c, v]) => `${c}x${v}`).join(" ")}
+                  </div>
+                </div>
               </div>
             ))}
           </div>
@@ -104,10 +122,11 @@ export default function PlayerInfo({ player, isCurrentPlayer, onBuyReserved }: P
                       key={card.id}
                       className="owned-card"
                       style={{ borderColor: GEM_COLORS[color] }}
-                      title={`${card.points}分 ${card.crowns}冠`}
+                      title={`${card.points}分 ${card.crowns}冠 ${card.bonusCount > 0 ? `奖励x${card.bonusCount}` : ""}`}
                     >
                       {card.points > 0 && <span>{card.points}</span>}
                       {card.crowns > 0 && <span>👑{card.crowns}</span>}
+                      {card.bonusCount > 1 && <span className="bonus-badge">x{card.bonusCount}</span>}
                     </div>
                   ))}
                 </div>
@@ -122,9 +141,10 @@ export default function PlayerInfo({ player, isCurrentPlayer, onBuyReserved }: P
               <div className="color-group-cards">
                 {cardsByColor["any"].map((card) => (
                   <div key={card.id} className="owned-card" style={{ borderColor: "#f39c12" }}
-                    title={`${card.points}分 ${card.crowns}冠`}>
+                    title={`${card.points}分 ${card.crowns}冠 ${card.bonusCount > 0 ? `奖励x${card.bonusCount}` : ""}`}>
                     {card.points > 0 && <span>{card.points}</span>}
                     {card.crowns > 0 && <span>👑{card.crowns}</span>}
+                    {card.bonusCount > 1 && <span className="bonus-badge">x{card.bonusCount}</span>}
                   </div>
                 ))}
               </div>
