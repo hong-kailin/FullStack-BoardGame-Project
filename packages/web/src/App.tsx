@@ -324,8 +324,10 @@ export default function App() {
                 )
               )}
             </div>
-            <div>
+            <div className="game-center">
               <Pyramid pyramid={state.pyramid} onBuyCard={handleBuy} canAffordCard={canAffordCard} />
+            </div>
+            <div className="game-right">
               {state.availableRoyalCards.length > 0 && (
                 <div className="royal-cards">
                   <h3>皇室卡牌</h3>

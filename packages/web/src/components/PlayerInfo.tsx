@@ -2,13 +2,6 @@ import type { Player, Card } from "@splendor/core";
 import { getPlayerBonuses } from "@splendor/core";
 import { getTotalPoints, getTotalCrowns } from "@splendor/core";
 
-const ABILITY_LABELS: Record<string, string> = {
-  extra_turn: "🔄",
-  take_privilege: "⭐",
-  take_from_opponent: "👊",
-  take_matching_token: "🎨",
-};
-
 const ROYAL_THRESHOLDS = [3, 6];
 
 interface PlayerInfoProps {
@@ -33,13 +26,6 @@ const GEM_COLORS: Record<string, string> = {
   red: "#e74c3c", blue: "#3498db", green: "#2ecc71",
   white: "#ecf0f1", black: "#2c3e50", any: "#f39c12",
 };
-
-function formatCost(cost: Card["cost"]): string {
-  return Object.entries(cost)
-    .filter(([, amount]) => amount > 0)
-    .map(([color, amount]) => `${GEM_EMOJI[color] || color}x${amount}`)
-    .join(" ");
-}
 
 export default function PlayerInfo({ player, isCurrentPlayer, onBuyReserved }: PlayerInfoProps) {
   const bonuses = getPlayerBonuses(player);
@@ -84,24 +70,21 @@ export default function PlayerInfo({ player, isCurrentPlayer, onBuyReserved }: P
       </div>
       <div className="player-bonuses">奖励: {bonusDisplay || "无"}</div>
       {player.reservedCards.length > 0 && (
-        <div className="reserved-cards">
-          <div className="reserved-label">保留卡牌:</div>
-          <div className="reserved-list">
+        <div className="reserved-stack-inline">
+          <div className="reserved-stack-inline-label">保留:</div>
+          <div className="reserved-stack-inline-cards">
             {player.reservedCards.map((card) => (
-              <div
-                key={card.id}
-                className="reserved-card"
+              <div key={card.id} className="reserved-stack-inline-card"
                 style={{ borderColor: GEM_COLORS[card.gem || ""] || "#999" }}
-                onClick={() => onBuyReserved?.(card.id)}
-                title="点击购买"
-              >
-                <div className="reserved-gem" style={{ color: GEM_COLORS[card.gem || ""] || "#999" }}>
+                onClick={() => onBuyReserved?.(card.id)}>
+                <span style={{ color: GEM_COLORS[card.gem || ""] || "#999" }}>
                   {card.gem === "any" ? "万能" : card.gem || "—"}
-                </div>
-                <div className="reserved-points">{card.points}分</div>
-                {card.crowns > 0 && <div className="reserved-crowns">👑x{card.crowns}</div>}
-                {card.ability && <div className="reserved-ability">{ABILITY_LABELS[card.ability]}</div>}
-                <div className="reserved-cost">{formatCost(card.cost)}</div>
+                </span>
+                <span>{card.points}分</span>
+                {card.crowns > 0 && <span>👑{card.crowns}</span>}
+                <span className="reserved-cost-hint">
+                  {Object.entries(card.cost).filter(([, v]) => v > 0).map(([c, v]) => `${c}x${v}`).join(" ")}
+                </span>
               </div>
             ))}
           </div>

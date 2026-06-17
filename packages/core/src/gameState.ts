@@ -119,6 +119,18 @@ function givePrivilege(
   return { players: state.players, privilegesAvailable: state.privilegesAvailable };
 }
 
+function removeCardAndRefillPyramid(
+  pyramid: Card[][],
+  decks: Card[][],
+  cardId: number,
+  fromLevel: number | null
+): { pyramid: Card[][]; decks: Card[][] } {
+  if (fromLevel === null) return { pyramid, decks };
+  const newPyramid = pyramid.map(level => level.filter(c => c.id !== cardId));
+  const refill = refillPyramidLevel(newPyramid, decks, fromLevel);
+  return refill;
+}
+
 function resolveCardAbility(
   state: GameState,
   card: { ability: CardAbility | null; gem?: BonusColor }
@@ -306,11 +318,11 @@ export function handleBuyCard(
     return { state, message: "宝石不足，无法购买该卡牌" };
   }
 
-  const result = purchaseCard(player, card, actualCost);
-  let newPlayer = result.player;
+  const purchaseResult = purchaseCard(player, card, actualCost);
+  let newPlayer = purchaseResult.player;
 
   const spentTokens: TokenType[] = [];
-  for (const [type, count] of Object.entries(result.spent)) {
+  for (const [type, count] of Object.entries(purchaseResult.spent)) {
     for (let i = 0; i < count; i++) {
       spentTokens.push(type as TokenType);
     }
@@ -324,19 +336,20 @@ export function handleBuyCard(
     };
   }
 
+  const pyramidRefill = removeCardAndRefillPyramid(
+    state.pyramid, state.decks, cardId, fromPyramid ? fromPyramid.level : null
+  );
+
+  const newPlayers = [...state.players] as [Player, Player];
+  newPlayers[state.currentPlayerIndex] = newPlayer;
+
   if (card.gem === "any") {
-    const newPlayers = [...state.players] as [Player, Player];
-    newPlayers[state.currentPlayerIndex] = newPlayer;
-
-    const newPyramid = fromPyramid
-      ? state.pyramid.map(level => level.filter(c => c.id !== cardId))
-      : state.pyramid;
-
     return {
       state: {
         ...state,
         players: newPlayers,
-        pyramid: newPyramid,
+        pyramid: pyramidRefill.pyramid,
+        decks: pyramidRefill.decks,
         bag: newBag,
         pendingGemCard: card,
         pendingGemLevel: fromPyramid ? fromPyramid.level : null,
@@ -347,27 +360,12 @@ export function handleBuyCard(
 
   const newThresholds = checkRoyalCardEligibility(newPlayer);
   if (newThresholds.length > 0) {
-    const newPlayers = [...state.players] as [Player, Player];
-    newPlayers[state.currentPlayerIndex] = newPlayer;
-
-    const newPyramid = fromPyramid
-      ? state.pyramid.map(level => level.filter(c => c.id !== cardId))
-      : state.pyramid;
-
-    let finalPyramid = newPyramid;
-    let finalDecks = state.decks;
-    if (fromPyramid) {
-      const refill = refillPyramidLevel(newPyramid, state.decks, fromPyramid.level);
-      finalPyramid = refill.pyramid;
-      finalDecks = refill.decks;
-    }
-
     return {
       state: {
         ...state,
         players: newPlayers,
-        pyramid: finalPyramid,
-        decks: finalDecks,
+        pyramid: pyramidRefill.pyramid,
+        decks: pyramidRefill.decks,
         bag: newBag,
         pendingRoyalThresholds: newThresholds,
       },
@@ -376,44 +374,21 @@ export function handleBuyCard(
   }
 
   if (checkWinCondition(newPlayer)) {
-    const newPyramid = fromPyramid
-      ? state.pyramid.map(level => level.filter(c => c.id !== cardId))
-      : state.pyramid;
-
-    let finalPyramid = newPyramid;
-    let finalDecks = state.decks;
-    if (fromPyramid) {
-      const refill = refillPyramidLevel(newPyramid, state.decks, fromPyramid.level);
-      finalPyramid = refill.pyramid;
-      finalDecks = refill.decks;
-    }
-
     return {
-      state: { ...state, bag: newBag, pyramid: finalPyramid, decks: finalDecks, winner: newPlayer },
+      state: {
+        ...state, players: newPlayers,
+        pyramid: pyramidRefill.pyramid, decks: pyramidRefill.decks,
+        bag: newBag, winner: newPlayer,
+      },
       message: `${player.name} 购买了卡牌 ${cardId}，达到胜利条件！`
     };
   }
 
-  const newPyramid = fromPyramid
-    ? state.pyramid.map(level => level.filter(c => c.id !== cardId))
-    : state.pyramid;
-
-  let finalPyramid = newPyramid;
-  let finalDecks = state.decks;
-  if (fromPyramid) {
-    const refill = refillPyramidLevel(newPyramid, state.decks, fromPyramid.level);
-    finalPyramid = refill.pyramid;
-    finalDecks = refill.decks;
-  }
-
-  const newPlayers = [...state.players] as [Player, Player];
-  newPlayers[state.currentPlayerIndex] = newPlayer;
-
   const stateAfterPurchase = {
     ...state,
     players: newPlayers,
-    pyramid: finalPyramid,
-    decks: finalDecks,
+    pyramid: pyramidRefill.pyramid,
+    decks: pyramidRefill.decks,
     bag: newBag,
   };
 
