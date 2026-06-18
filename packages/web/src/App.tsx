@@ -15,6 +15,8 @@ const TOKEN_LABELS: Record<string, string> = {
   pearl: "🦪", gold: "🟡",
 };
 
+type UIPhase = "normal" | "gold_selecting" | "discarding" | "privilege_selecting";
+
 function AuthForm({ onLogin }: { onLogin: (username: string) => void }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -66,11 +68,9 @@ export default function App() {
   const [selectedCells, setSelectedCells] = useState<[number, number][]>([]);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
-  const [goldMode, setGoldMode] = useState(false);
-  const [discardMode, setDiscardMode] = useState(false);
+  const [uiPhase, setUIPhase] = useState<UIPhase>("normal");
   const [discardNeeded, setDiscardNeeded] = useState(0);
   const [discardSelection, setDiscardSelection] = useState<Record<string, number>>({});
-  const [privilegeMode, setPrivilegeMode] = useState(false);
 
   if (!username) {
     return <AuthForm onLogin={setUsername} />;
@@ -79,7 +79,7 @@ export default function App() {
   const handleCellClick = (row: number, col: number) => {
     setError("");
 
-    if (privilegeMode) {
+    if (uiPhase === "privilege_selecting") {
       const token = state.boardTokens[row][col];
       if (!token || token === "gold") {
         setError("只能拿取非黄金标记");
@@ -87,9 +87,9 @@ export default function App() {
       }
       const result = executeAction(state, { type: "use_privilege", position: [row, col] });
       setState(result.state);
-      setPrivilegeMode(false);
+      setUIPhase("normal");
       if (result.needsDiscard > 0) {
-        setDiscardMode(true);
+        setUIPhase("discarding");
         setDiscardNeeded(result.needsDiscard);
         setDiscardSelection({});
       }
@@ -120,7 +120,7 @@ export default function App() {
     setState(result.state);
     setSelectedCells([]);
     if (result.needsDiscard > 0) {
-      setDiscardMode(true);
+      setUIPhase("discarding");
       setDiscardNeeded(result.needsDiscard);
       setDiscardSelection({});
       setMessage(result.message);
@@ -156,7 +156,7 @@ export default function App() {
     const result = executeAction(state, { type: "discard_tokens", discards });
     setState(result.state);
     setMessage(result.message);
-    setDiscardMode(false);
+    setUIPhase("normal");
     setDiscardNeeded(0);
     setDiscardSelection({});
   };
@@ -166,17 +166,17 @@ export default function App() {
     const pos = selectedCells[0];
     const token = state.boardTokens[pos[0]][pos[1]];
     if (token !== "gold") return;
-    setGoldMode(true);
+    setUIPhase("gold_selecting");
     setMessage("请选择一张要保留的卡牌");
   };
 
   const handleBuy = (cardId: number) => {
-    if (goldMode) {
+    if (uiPhase === "gold_selecting") {
       const result = executeAction(state, { type: "take_gold", position: selectedCells[0], cardId });
       setState(result.state);
       setMessage(result.message);
       setSelectedCells([]);
-      setGoldMode(false);
+      setUIPhase("normal");
       return;
     }
     const result = executeAction(state, { type: "buy_card", cardId });
@@ -232,6 +232,8 @@ export default function App() {
   const isGoldSelected = selectedCells.length === 1 &&
     state.boardTokens[selectedCells[0][0]]?.[selectedCells[0][1]] === "gold";
 
+  const isNormalPhase = uiPhase === "normal" || uiPhase === "privilege_selecting";
+
   return (
     <div className="app">
       <h1>璀璨宝石对决</h1>
@@ -241,8 +243,8 @@ export default function App() {
         <button className="btn-link" onClick={() => setUsername(null)}>退出</button>
       </div>
       {message && <div className="message">{message}</div>}
-      {goldMode && <div className="message">请点击金字塔中的一张卡牌来保留</div>}
-      {discardMode && (
+      {uiPhase === "gold_selecting" && <div className="message">请点击金字塔中的一张卡牌来保留</div>}
+      {uiPhase === "discarding" && (
         <div className="discard-panel">
           <div className="message">标记超过上限，请选择 {discardNeeded} 个标记归还（已选 {discardSelection.length} 个）</div>
           <div className="discard-tokens">
@@ -315,7 +317,7 @@ export default function App() {
           </div>
         </div>
       )}
-      {!discardMode && state.pendingRoyalThresholds.length === 0 && !state.pendingGemCard && (
+      {uiPhase !== "discarding" && state.pendingRoyalThresholds.length === 0 && !state.pendingGemCard && (
         <>
           <div className="game-layout">
             <div>
@@ -325,7 +327,7 @@ export default function App() {
                 onCellClick={handleCellClick}
               />
               {error && <div className="board-error">{error}</div>}
-              {!state.winner && !goldMode && selectedCells.length > 0 && (
+              {!state.winner && isNormalPhase && selectedCells.length > 0 && (
                 isGoldSelected ? (
                   <button className="btn-take" onClick={handleTakeGoldAction}>
                     拿取黄金并保留卡牌
@@ -364,13 +366,7 @@ export default function App() {
             <PlayerInfo player={state.players[0]} isCurrentPlayer={state.currentPlayerIndex === 0} onBuyReserved={handleBuyReserved} canAffordReserved={canAffordReserved} />
             <PlayerInfo player={state.players[1]} isCurrentPlayer={state.currentPlayerIndex === 1} onBuyReserved={handleBuyReserved} canAffordReserved={canAffordReserved} />
           </div>
-          {/*
-            && 是短路求值：从左到右，遇到 false 就停。
-            !state.winner && !goldMode 翻译成人话：
-            "游戏没结束 且 不在黄金模式" → 渲染按钮；否则什么都不渲染。
-            React 中 {false} 和 {null} 都不会产生任何 DOM。
-          */}
-          {!state.winner && !goldMode && (
+          {!state.winner && isNormalPhase && (
             <div className="action-buttons">
               <button className="btn-pass" onClick={handleSkip}>
                 跳过回合
@@ -385,14 +381,14 @@ export default function App() {
               </button>
               {player.privileges > 0 && (
                 <button
-                  className={`btn-pass ${privilegeMode ? "active" : ""}`}
+                  className={`btn-pass ${uiPhase === "privilege_selecting" ? "active" : ""}`}
                   onClick={() => {
-                    setPrivilegeMode(!privilegeMode);
+                    setUIPhase(uiPhase === "privilege_selecting" ? "normal" : "privilege_selecting");
                     setSelectedCells([]);
-                    setError(privilegeMode ? "" : "请点击版图上的一个非黄金标记");
+                    setError(uiPhase === "privilege_selecting" ? "" : "请点击版图上的一个非黄金标记");
                   }}
                 >
-                  {privilegeMode ? "取消使用特权" : `使用特权 (${player.privileges})`}
+                  {uiPhase === "privilege_selecting" ? "取消使用特权" : `使用特权 (${player.privileges})`}
                 </button>
               )}
             </div>

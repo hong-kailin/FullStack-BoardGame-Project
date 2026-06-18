@@ -705,7 +705,7 @@ splendor-duel/
 - 给 PlayerInfo 组件写测试：当前玩家高亮、保留卡牌显示
 - **产出**：3 个组件的测试文件，`npm test` 覆盖 UI 交互逻辑
 
-### 第 74 课：用状态机重构 App.tsx
+### 第 75 课：用状态机重构 App.tsx
 
 - 把 `goldMode`、`discardMode`、`privilegeMode` 等多个 boolean 合并为单一 `uiPhase`
 - 定义 `UIPhase` 类型：`"normal" | "gold_selecting" | "discarding" | "privilege_selecting" | "royal_claiming" | "gem_color_selecting"`
