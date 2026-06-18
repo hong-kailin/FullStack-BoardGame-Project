@@ -2,6 +2,7 @@ import { useState } from "react";
 import Board from "./components/Board";
 import Pyramid from "./components/Pyramid";
 import PlayerInfo from "./components/PlayerInfo";
+import DebugPanel from "./components/DebugPanel";
 import { createInitialState, executeAction } from "@splendor/core";
 import { validateCellSelection } from "@splendor/core";
 import { getPlayerBonuses, getActualCost, canAfford } from "@splendor/core";
@@ -234,6 +235,7 @@ export default function App() {
   return (
     <div className="app">
       <h1>璀璨宝石对决</h1>
+      <DebugPanel state={state} setState={setState} />
       <div className="user-bar">
         <span>{username}</span>
         <button className="btn-link" onClick={() => setUsername(null)}>退出</button>
