@@ -9,8 +9,10 @@ const ABILITY_LABELS: Record<string, string> = {
 
 interface PyramidProps {
   pyramid: Card[][];
+  decks: Card[][];
   onBuyCard: (cardId: number) => void;
   canAffordCard: (cardId: number) => boolean;
+  highlightAll?: boolean;
 }
 
 const GEM_COLORS: Record<string, string> = {
@@ -31,17 +33,20 @@ function formatCost(cost: Card["cost"]): string {
     .join(" ");
 }
 
-export default function Pyramid({ pyramid, onBuyCard, canAffordCard }: PyramidProps) {
+export default function Pyramid({ pyramid, decks, onBuyCard, canAffordCard, highlightAll }: PyramidProps) {
   const reversed = [...pyramid].reverse();
 
   return (
     <div className="pyramid">
       <h3>金字塔</h3>
-      {reversed.map((levelCards, i) => (
+      {reversed.map((levelCards, i) => {
+        const actualLevel = 2 - i;
+        const deckCount = decks[actualLevel]?.length ?? 0;
+        return (
         <div key={i} className="pyramid-level">
           <div className="pyramid-cards">
             {levelCards.map((card) => {
-              const affordable = canAffordCard(card.id);
+              const affordable = highlightAll || canAffordCard(card.id);
               return (
               <div
                 key={card.id}
@@ -61,8 +66,10 @@ export default function Pyramid({ pyramid, onBuyCard, canAffordCard }: PyramidPr
               );
             })}
           </div>
+          <div className="pyramid-deck-count">牌库剩余 {deckCount} 张</div>
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

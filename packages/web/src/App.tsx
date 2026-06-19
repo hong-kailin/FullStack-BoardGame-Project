@@ -15,7 +15,7 @@ const TOKEN_LABELS: Record<string, string> = {
   pearl: "🦪", gold: "🟡",
 };
 
-type UIPhase = "normal" | "gold_selecting" | "discarding" | "privilege_selecting";
+type UIPhase = "normal" | "gold_selecting" | "discarding" | "privilege_selecting" | "confirm_buy";
 
 function AuthForm({ onLogin }: { onLogin: (username: string) => void }) {
   const [username, setUsername] = useState("");
@@ -41,6 +41,8 @@ function AuthForm({ onLogin }: { onLogin: (username: string) => void }) {
 
   return (
     <div className="auth-form">
+      <h1 className="auth-title">💎 璀璨宝石对决</h1>
+      <p className="auth-desc">双人策略卡牌游戏 · 收集宝石 · 购买卡牌 · 争夺王冠</p>
       <h2>{isRegister ? "注册" : "登录"}</h2>
       <input
         placeholder="用户名"
@@ -71,6 +73,7 @@ export default function App() {
   const [uiPhase, setUIPhase] = useState<UIPhase>("normal");
   const [discardNeeded, setDiscardNeeded] = useState(0);
   const [discardSelection, setDiscardSelection] = useState<Record<string, number>>({});
+  const [confirmCardId, setConfirmCardId] = useState<number | null>(null);
 
   if (!username) {
     return <AuthForm onLogin={setUsername} />;
@@ -179,15 +182,29 @@ export default function App() {
       setUIPhase("normal");
       return;
     }
-    const result = executeAction(state, { type: "buy_card", cardId });
-    setState(result.state);
-    setMessage(result.message);
+    if (uiPhase === "confirm_buy" && confirmCardId === cardId) {
+      const result = executeAction(state, { type: "buy_card", cardId });
+      setState(result.state);
+      setMessage(result.message);
+      setUIPhase("normal");
+      setConfirmCardId(null);
+      return;
+    }
+    setUIPhase("confirm_buy");
+    setConfirmCardId(cardId);
   };
 
   const handleBuyReserved = (cardId: number) => {
-    const result = executeAction(state, { type: "buy_card", cardId });
-    setState(result.state);
-    setMessage(result.message);
+    if (uiPhase === "confirm_buy" && confirmCardId === cardId) {
+      const result = executeAction(state, { type: "buy_card", cardId });
+      setState(result.state);
+      setMessage(result.message);
+      setUIPhase("normal");
+      setConfirmCardId(null);
+      return;
+    }
+    setUIPhase("confirm_buy");
+    setConfirmCardId(cardId);
   };
 
   const handleSkip = () => {
@@ -232,6 +249,10 @@ export default function App() {
   const isGoldSelected = selectedCells.length === 1 &&
     state.boardTokens[selectedCells[0][0]]?.[selectedCells[0][1]] === "gold";
 
+  const selectedTokens = selectedCells.map(([r, c]) => state.boardTokens[r][c]).filter(Boolean) as TokenType[];
+  const triggersPrivilege = selectedTokens.length === 3 && selectedTokens.every(t => t === selectedTokens[0])
+    || selectedTokens.filter(t => t === "pearl").length === 2;
+
   const isNormalPhase = uiPhase === "normal" || uiPhase === "privilege_selecting";
 
   return (
@@ -243,81 +264,112 @@ export default function App() {
         <button className="btn-link" onClick={() => setUsername(null)}>退出</button>
       </div>
       {message && <div className="message">{message}</div>}
-      {uiPhase === "gold_selecting" && <div className="message">请点击金字塔中的一张卡牌来保留</div>}
       {uiPhase === "discarding" && (
-        <div className="discard-panel">
-          <div className="message">标记超过上限，请选择 {discardNeeded} 个标记归还（已选 {discardSelection.length} 个）</div>
-          <div className="discard-tokens">
-            {(["pearl", "red", "blue", "green", "white", "black", "gold"] as const).map((type) => {
-              const count = player.tokens[type] || 0;
-              if (count === 0) return null;
-              const selectedCount = discardSelection[type] || 0;
-              return (
-                <div
-                  key={type}
-                  className={`discard-token ${selectedCount > 0 ? "selected" : ""}`}
-                  onClick={() => handleDiscardSelect(type)}
-                >
-                  {TOKEN_LABELS[type]} x{count}
-                  {selectedCount > 0 && `（归还 ${selectedCount}）`}
-                </div>
-              );
-            })}
+        <div className="modal-overlay">
+          <div className="discard-panel">
+            <div className="message">标记超过上限，请选择 {discardNeeded} 个标记归还（已选 {Object.values(discardSelection).reduce((a, b) => a + b, 0)} 个）</div>
+            <div className="discard-tokens">
+              {(["pearl", "red", "blue", "green", "white", "black", "gold"] as const).map((type) => {
+                const count = player.tokens[type] || 0;
+                if (count === 0) return null;
+                const selectedCount = discardSelection[type] || 0;
+                return (
+                  <div
+                    key={type}
+                    className={`discard-token ${selectedCount > 0 ? "selected" : ""}`}
+                    onClick={() => handleDiscardSelect(type)}
+                  >
+                    {TOKEN_LABELS[type]} x{count}
+                    {selectedCount > 0 && `（归还 ${selectedCount}）`}
+                  </div>
+                );
+              })}
+            </div>
+            {Object.values(discardSelection).reduce((a, b) => a + b, 0) === discardNeeded && (
+              <button className="btn-take" onClick={handleDiscardConfirm}>
+                确认归还
+              </button>
+            )}
           </div>
-          {Object.values(discardSelection).reduce((a, b) => a + b, 0) === discardNeeded && (
-            <button className="btn-take" onClick={handleDiscardConfirm}>
-              确认归还
-            </button>
-          )}
         </div>
       )}
       {state.pendingRoyalThresholds.length > 0 && (
-        <div className="royal-claim-panel">
-          <div className="message">达到 {state.pendingRoyalThresholds.join("/")} 王冠！请选择一张皇室卡牌：</div>
-          <div className="royal-claim-list">
-            {state.availableRoyalCards.map((card) => (
-              <div
-                key={card.id}
-                className="royal-claim-card"
-                onClick={() => {
-                  const result = executeAction(state, { type: "claim_royal_card", royalCardId: card.id });
-                  setState(result.state);
-                  setMessage(result.message);
-                }}
-              >
-                <div className="royal-claim-points">{card.points} 分</div>
-                {card.ability && (
-                  <div className="royal-claim-ability">
-                    {{ extra_turn: "🔄 额外回合", take_privilege: "⭐ 获得特权", take_from_opponent: "👊 抢夺标记", take_matching_token: "🎨 拿取同色" }[card.ability]}
-                  </div>
-                )}
-              </div>
-            ))}
+        <div className="modal-overlay">
+          <div className="royal-claim-panel">
+            <div className="message">达到 {state.pendingRoyalThresholds.join("/")} 王冠！请选择一张皇室卡牌：</div>
+            <div className="royal-claim-list">
+              {state.availableRoyalCards.map((card) => (
+                <div
+                  key={card.id}
+                  className="royal-claim-card"
+                  onClick={() => {
+                    const result = executeAction(state, { type: "claim_royal_card", royalCardId: card.id });
+                    setState(result.state);
+                    setMessage(result.message);
+                  }}
+                >
+                  <div className="royal-claim-points">{card.points} 分</div>
+                  {card.ability && (
+                    <div className="royal-claim-ability">
+                      {{ extra_turn: "🔄 额外回合", take_privilege: "⭐ 获得特权", take_from_opponent: "👊 抢夺标记", take_matching_token: "🎨 拿取同色" }[card.ability]}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       )}
       {state.pendingGemCard && (
-        <div className="gem-color-panel">
-          <div className="message">请选择万能奖励的颜色：</div>
-          <div className="gem-color-list">
-            {(["red", "blue", "green", "white", "black"] as const).map((color) => (
-              <div
-                key={color}
-                className="gem-color-option"
-                style={{ borderColor: { red: "#e74c3c", blue: "#3498db", green: "#2ecc71", white: "#ecf0f1", black: "#2c3e50" }[color] }}
-                onClick={() => {
-                  const result = executeAction(state, { type: "set_gem_color", cardId: state.pendingGemCard!.id, color });
-                  setState(result.state);
-                  setMessage(result.message);
-                }}
-              >
-                {{ red: "🔴 红色", blue: "🔵 蓝色", green: "🟢 绿色", white: "⚪ 白色", black: "⚫ 黑色" }[color]}
-              </div>
-            ))}
+        <div className="modal-overlay">
+          <div className="gem-color-panel">
+            <div className="message">请选择万能奖励的颜色：</div>
+            <div className="gem-color-list">
+              {(["red", "blue", "green", "white", "black"] as const).map((color) => (
+                <div
+                  key={color}
+                  className="gem-color-option"
+                  style={{ borderColor: { red: "#e74c3c", blue: "#3498db", green: "#2ecc71", white: "#ecf0f1", black: "#2c3e50" }[color] }}
+                  onClick={() => {
+                    const result = executeAction(state, { type: "set_gem_color", cardId: state.pendingGemCard!.id, color });
+                    setState(result.state);
+                    setMessage(result.message);
+                  }}
+                >
+                  {{ red: "🔴 红色", blue: "🔵 蓝色", green: "🟢 绿色", white: "⚪ 白色", black: "⚫ 黑色" }[color]}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       )}
-      {uiPhase !== "discarding" && state.pendingRoyalThresholds.length === 0 && !state.pendingGemCard && (
+      {uiPhase === "confirm_buy" && confirmCardId !== null && (
+        <div className="modal-overlay">
+          <div className="confirm-panel">
+            <div className="message">确认购买这张卡牌？</div>
+            <div className="confirm-buttons">
+              <button className="btn-take" onClick={() => handleBuy(confirmCardId)}>确认购买</button>
+              <button className="btn-pass" onClick={() => { setUIPhase("normal"); setConfirmCardId(null); }}>取消</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {state.winner && (
+        <div className="modal-overlay">
+          <div className="win-panel">
+            <div className="win-title">🎉 {state.winner.name} 获胜！</div>
+            <div className="win-detail">
+              声望: {state.winner.cards.reduce((s, c) => s + c.points, 0) + state.winner.royalCards.reduce((s, c) => s + c.points, 0)} 分
+              &nbsp;|&nbsp;
+              王冠: {state.winner.cards.reduce((s, c) => s + c.crowns, 0) + state.winner.royalCards.reduce((s, c) => s + c.crowns, 0)} 个
+            </div>
+            <button className="btn-take" onClick={() => setState(createInitialState())}>
+              再来一局
+            </button>
+          </div>
+        </div>
+      )}
+      {(
         <>
           <div className="game-layout">
             <div>
@@ -325,6 +377,7 @@ export default function App() {
                 boardTokens={state.boardTokens}
                 selectedCells={selectedCells}
                 onCellClick={handleCellClick}
+                privilegesAvailable={state.privilegesAvailable}
               />
               {error && <div className="board-error">{error}</div>}
               {!state.winner && isNormalPhase && selectedCells.length > 0 && (
@@ -335,12 +388,21 @@ export default function App() {
                 ) : (
                   <button className="btn-take" onClick={handleTake}>
                     拿取标记 ({selectedCells.length} 个)
+                    {triggersPrivilege && <span className="privilege-warn"> ⚠️ 对手+1特权</span>}
                   </button>
                 )
               )}
             </div>
             <div className="game-center">
-              <Pyramid pyramid={state.pyramid} onBuyCard={handleBuy} canAffordCard={canAffordCard} />
+              {uiPhase === "gold_selecting" && (
+                <div className="gold-hint">
+                  点击卡牌保留（保留后仍需购买）
+                  <button className="btn-link" style={{ marginLeft: 8 }} onClick={() => { setUIPhase("normal"); setMessage(""); }}>
+                    取消
+                  </button>
+                </div>
+              )}
+              <Pyramid pyramid={state.pyramid} decks={state.decks} onBuyCard={handleBuy} canAffordCard={canAffordCard} highlightAll={uiPhase === "gold_selecting"} />
             </div>
             <div className="game-right">
               {state.availableRoyalCards.length > 0 && (
