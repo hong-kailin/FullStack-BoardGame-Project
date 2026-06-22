@@ -15,7 +15,7 @@ const TOKEN_LABELS: Record<string, string> = {
   pearl: "🦪", gold: "🟡",
 };
 
-type UIPhase = "normal" | "gold_selecting" | "discarding" | "privilege_selecting" | "confirm_buy";
+type UIPhase = "normal" | "gold_selecting" | "discarding" | "privilege_selecting" | "privilege_menu" | "confirm_buy";
 
 function AuthForm({ onLogin }: { onLogin: (username: string) => void }) {
   const [username, setUsername] = useState("");
@@ -226,7 +226,7 @@ export default function App() {
 
   const canAffordCard = (cardId: number) => {
     for (const level of state.pyramid) {
-      const card = level.find(c => c.id === cardId);
+      const card = level.find(c => c && c.id === cardId);
       if (card) {
         const actualCost = getActualCost(card, bonuses);
         return canAfford(player, actualCost);
@@ -253,7 +253,7 @@ export default function App() {
   const triggersPrivilege = selectedTokens.length === 3 && selectedTokens.every(t => t === selectedTokens[0])
     || selectedTokens.filter(t => t === "pearl").length === 2;
 
-  const isNormalPhase = uiPhase === "normal" || uiPhase === "privilege_selecting";
+  const isNormalPhase = uiPhase === "normal" || uiPhase === "privilege_selecting" || uiPhase === "privilege_menu";
 
   return (
     <div className="app">
@@ -433,24 +433,48 @@ export default function App() {
               <button className="btn-pass" onClick={handleSkip}>
                 跳过回合
               </button>
-              <button
-                className="btn-pass"
-                onClick={handleRefill}
-                disabled={state.bag.length === 0}
-                title={state.bag.length === 0 ? "袋子为空" : `袋子中有 ${state.bag.length} 个标记`}
-              >
-                补充版图（对手+1特权）
-              </button>
               {player.privileges > 0 && (
+                uiPhase === "privilege_menu" ? (
+                  <div className="privilege-menu">
+                    <button
+                      className="btn-pass active"
+                      onClick={() => {
+                        setUIPhase("privilege_selecting");
+                        setSelectedCells([]);
+                        setError("请点击版图上的一个非黄金标记");
+                      }}
+                    >
+                      拿取标记
+                    </button>
+                    <button
+                      className="btn-pass"
+                      onClick={handleRefill}
+                      disabled={state.bag.length === 0}
+                      title={state.bag.length === 0 ? "袋子为空" : `袋子中有 ${state.bag.length} 个标记`}
+                    >
+                      补充版图
+                    </button>
+                    <button className="btn-pass" onClick={() => setUIPhase("normal")}>
+                      取消
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    className="btn-pass"
+                    onClick={() => setUIPhase("privilege_menu")}
+                  >
+                    使用特权 ({player.privileges})
+                  </button>
+                )
+              )}
+              {player.privileges === 0 && (
                 <button
-                  className={`btn-pass ${uiPhase === "privilege_selecting" ? "active" : ""}`}
-                  onClick={() => {
-                    setUIPhase(uiPhase === "privilege_selecting" ? "normal" : "privilege_selecting");
-                    setSelectedCells([]);
-                    setError(uiPhase === "privilege_selecting" ? "" : "请点击版图上的一个非黄金标记");
-                  }}
+                  className="btn-pass"
+                  onClick={handleRefill}
+                  disabled={state.bag.length === 0}
+                  title={state.bag.length === 0 ? "袋子为空" : `袋子中有 ${state.bag.length} 个标记`}
                 >
-                  {uiPhase === "privilege_selecting" ? "取消使用特权" : `使用特权 (${player.privileges})`}
+                  补充版图（对手+1特权）
                 </button>
               )}
             </div>

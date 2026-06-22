@@ -63,7 +63,7 @@ export interface Player {
 export interface GameState {
   players: [Player, Player];
   boardTokens: (TokenType | null)[][];
-  pyramid: Card[][];
+  pyramid: (Card | null)[][];
   decks: Card[][];
   availableRoyalCards: RoyalCard[];
   currentPlayerIndex: number;

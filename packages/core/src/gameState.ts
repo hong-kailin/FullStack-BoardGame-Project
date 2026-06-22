@@ -66,26 +66,41 @@ export function createInitialState(): GameState {
 }
 
 function refillPyramidLevel(
-  pyramid: Card[][],
+  pyramid: (Card | null)[][],
   decks: Card[][],
   level: number
-): { pyramid: Card[][]; decks: Card[][] } {
+): { pyramid: (Card | null)[][]; decks: Card[][] } {
   const newPyramid = pyramid.map(levelCards => [...levelCards]);
   const newDecks = decks.map(deck => [...deck]);
-  const targetCount = level === 0 ? 5 : level === 1 ? 4 : 3;
 
-  while (newPyramid[level].length < targetCount && newDecks[level].length > 0) {
-    const card = newDecks[level].shift()!;
-    newPyramid[level].push(card);
+  for (let i = 0; i < newPyramid[level].length && newDecks[level].length > 0; i++) {
+    if (newPyramid[level][i] === null) {
+      const card = newDecks[level].shift()!;
+      newPyramid[level][i] = card;
+    }
   }
 
   return { pyramid: newPyramid, decks: newDecks };
 }
 
-function findCardInPyramid(pyramid: Card[][], cardId: number): { level: number; card: Card } | null {
+function removeCardAndRefillPyramid(
+  pyramid: (Card | null)[][],
+  decks: Card[][],
+  cardId: number,
+  fromLevel: number | null
+): { pyramid: (Card | null)[][]; decks: Card[][] } {
+  if (fromLevel === null) return { pyramid, decks };
+  const newPyramid = pyramid.map(level =>
+    level.map(c => c && c.id === cardId ? null : c)
+  );
+  const refill = refillPyramidLevel(newPyramid, decks, fromLevel);
+  return refill;
+}
+
+function findCardInPyramid(pyramid: (Card | null)[][], cardId: number): { level: number; card: Card } | null {
   for (let level = 0; level < pyramid.length; level++) {
     for (const card of pyramid[level]) {
-      if (card.id === cardId) return { level, card };
+      if (card && card.id === cardId) return { level, card };
     }
   }
   return null;
@@ -117,18 +132,6 @@ function givePrivilege(
   }
 
   return { players: state.players, privilegesAvailable: state.privilegesAvailable };
-}
-
-function removeCardAndRefillPyramid(
-  pyramid: Card[][],
-  decks: Card[][],
-  cardId: number,
-  fromLevel: number | null
-): { pyramid: Card[][]; decks: Card[][] } {
-  if (fromLevel === null) return { pyramid, decks };
-  const newPyramid = pyramid.map(level => level.filter(c => c.id !== cardId));
-  const refill = refillPyramidLevel(newPyramid, decks, fromLevel);
-  return refill;
 }
 
 function resolveCardAbility(
@@ -442,7 +445,7 @@ export function handleTakeGold(
   };
 
   const newPyramid = state.pyramid.map(level =>
-    level.filter(c => c.id !== cardId)
+    level.filter(c => c && c.id !== cardId)
   );
 
   const refill = refillPyramidLevel(newPyramid, state.decks, found.level);

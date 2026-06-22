@@ -1,4 +1,4 @@
-import type { Player, Card } from "@splendor/core";
+import type { Player } from "@splendor/core";
 import { getPlayerBonuses } from "@splendor/core";
 import { getTotalPoints, getTotalCrowns } from "@splendor/core";
 
@@ -24,38 +24,45 @@ const TOKEN_LABELS: Record<string, string> = {
   pearl: "🦪", gold: "🟡",
 };
 
+const GEM_COLORS: Record<string, string> = {
+  red: "#e74c3c", blue: "#3498db", green: "#2ecc71",
+  white: "#ecf0f1", black: "#2c3e50", any: "#f39c12",
+};
+
 const GEM_EMOJI: Record<string, string> = {
   red: "🔴", blue: "🔵", green: "🟢",
   white: "⚪", black: "⚫",
   pearl: "🦪", any: "🟡",
 };
 
-const GEM_COLORS: Record<string, string> = {
-  red: "#e74c3c", blue: "#3498db", green: "#2ecc71",
-  white: "#ecf0f1", black: "#2c3e50", any: "#f39c12",
-};
+type ColorStat = { points: number; tokens: number; bonus: number };
 
 export default function PlayerInfo({ player, isCurrentPlayer, onBuyReserved, canAffordReserved }: PlayerInfoProps) {
   const bonuses = getPlayerBonuses(player);
   const crowns = getTotalCrowns(player);
 
+  const colors = ["red", "blue", "green", "white", "black"] as const;
+
+  const stats: Record<string, ColorStat> = {};
+  for (const color of colors) {
+    stats[color] = { points: 0, tokens: player.tokens[color] || 0, bonus: bonuses[color] || 0 };
+  }
+  stats["pearl"] = { points: 0, tokens: player.tokens["pearl"] || 0, bonus: 0 };
+  stats["any"] = { points: 0, tokens: 0, bonus: 0 };
+  stats["none"] = { points: 0, tokens: 0, bonus: 0 };
+
+  for (const card of player.cards) {
+    const key = card.gem || "none";
+    stats[key].points += card.points;
+    if (card.gem === "any") {
+      stats["any"].bonus += card.bonusCount;
+    }
+  }
+
   const tokenDisplay = Object.entries(player.tokens)
     .filter(([, amount]) => amount > 0)
     .map(([type, amount]) => `${TOKEN_LABELS[type]}x${amount}`)
     .join(" ");
-
-  const bonusDisplay = Object.entries(bonuses)
-    .filter(([, amount]) => amount > 0)
-    .map(([color, amount]) => `${color}x${amount}`)
-    .join(" ");
-
-  const cardsByColor: Record<string, Card[]> = {
-    red: [], blue: [], green: [], white: [], black: [], any: [], none: [],
-  };
-  for (const card of player.cards) {
-    const key = card.gem || "none";
-    cardsByColor[key].push(card);
-  }
 
   return (
     <div className={`player-info ${isCurrentPlayer ? "current" : ""}`}>
@@ -76,7 +83,6 @@ export default function PlayerInfo({ player, isCurrentPlayer, onBuyReserved, can
           return <span key={t} className="royal-hint locked">👑x{t}</span>;
         })}
       </div>
-      <div className="player-bonuses">奖励: {bonusDisplay || "无"}</div>
       {player.reservedCards.length > 0 && (
         <div className="reserved-stack-inline">
           <div className="reserved-stack-inline-label">保留:</div>
@@ -109,64 +115,36 @@ export default function PlayerInfo({ player, isCurrentPlayer, onBuyReserved, can
         </div>
       )}
       {player.cards.length > 0 && (
-        <div className="owned-cards">
-          {(["red", "blue", "green", "white", "black"] as const).map((color) =>
-            cardsByColor[color].length > 0 && (
-              <div key={color} className="color-group">
-                <div className="color-group-header" style={{ color: GEM_COLORS[color] }}>
-                  {GEM_EMOJI[color]} x{cardsByColor[color].length}
-                </div>
-                <div className="color-group-cards">
-                  {cardsByColor[color].map((card) => (
-                    <div
-                      key={card.id}
-                      className="owned-card"
-                      style={{ borderColor: GEM_COLORS[color] }}
-                      title={`${card.points}分 ${card.crowns}冠 ${card.bonusCount > 0 ? `奖励x${card.bonusCount}` : ""}`}
-                    >
-                      {card.points > 0 && <span>{card.points}</span>}
-                      {card.crowns > 0 && <span>👑{card.crowns}</span>}
-                      {card.bonusCount > 1 && <span className="bonus-badge">x{card.bonusCount}</span>}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )
-          )}
-          {cardsByColor["any"].length > 0 && (
-            <div className="color-group">
-              <div className="color-group-header" style={{ color: "#f39c12" }}>
-                🟡 万能 x{cardsByColor["any"].length}
-              </div>
-              <div className="color-group-cards">
-                {cardsByColor["any"].map((card) => (
-                  <div key={card.id} className="owned-card" style={{ borderColor: "#f39c12" }}
-                    title={`${card.points}分 ${card.crowns}冠 ${card.bonusCount > 0 ? `奖励x${card.bonusCount}` : ""}`}>
-                    {card.points > 0 && <span>{card.points}</span>}
-                    {card.crowns > 0 && <span>👑{card.crowns}</span>}
-                    {card.bonusCount > 1 && <span className="bonus-badge">x{card.bonusCount}</span>}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-          {cardsByColor["none"].length > 0 && (
-            <div className="color-group">
-              <div className="color-group-header" style={{ color: "#999" }}>
-                ⬜ 无奖励 x{cardsByColor["none"].length}
-              </div>
-              <div className="color-group-cards">
-                {cardsByColor["none"].map((card) => (
-                  <div key={card.id} className="owned-card" style={{ borderColor: "#999" }}
-                    title={`${card.points}分 ${card.crowns}冠`}>
-                    {card.points > 0 && <span>{card.points}</span>}
-                    {card.crowns > 0 && <span>👑{card.crowns}</span>}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
+        <table className="stats-table">
+          <thead>
+            <tr>
+              <th></th>
+              {colors.map(c => <th key={c} style={{ color: GEM_COLORS[c] }}>{GEM_EMOJI[c]}</th>)}
+              <th style={{ color: "#999" }}>🦪</th>
+              <th style={{ color: "#f39c12" }}>🟡</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>分数</td>
+              {colors.map(c => <td key={c}>{stats[c].points || "-"}</td>)}
+              <td>-</td>
+              <td>{stats["any"].points || "-"}</td>
+            </tr>
+            <tr>
+              <td>宝石</td>
+              {colors.map(c => <td key={c}>{stats[c].tokens || "-"}</td>)}
+              <td>{stats["pearl"].tokens || "-"}</td>
+              <td>-</td>
+            </tr>
+            <tr>
+              <td>代替</td>
+              {colors.map(c => <td key={c}>{stats[c].bonus || "-"}</td>)}
+              <td>-</td>
+              <td>{stats["any"].bonus || "-"}</td>
+            </tr>
+          </tbody>
+        </table>
       )}
     </div>
   );

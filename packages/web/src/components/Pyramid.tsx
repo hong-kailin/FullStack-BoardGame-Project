@@ -8,7 +8,7 @@ const ABILITY_LABELS: Record<string, string> = {
 };
 
 interface PyramidProps {
-  pyramid: Card[][];
+  pyramid: (Card | null)[][];
   decks: Card[][];
   onBuyCard: (cardId: number) => void;
   canAffordCard: (cardId: number) => boolean;
@@ -46,6 +46,9 @@ export default function Pyramid({ pyramid, decks, onBuyCard, canAffordCard, high
         <div key={i} className="pyramid-level">
           <div className="pyramid-cards">
             {levelCards.map((card) => {
+              if (!card) {
+                return <div key={Math.random()} className="pyramid-card pyramid-empty" />;
+              }
               const affordable = highlightAll || canAffordCard(card.id);
               return (
               <div

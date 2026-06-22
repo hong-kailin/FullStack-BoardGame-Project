@@ -102,8 +102,17 @@ export function validateCellSelection(
     return "最多只能拿取 3 个标记";
   }
 
-  const newSelected: [number, number][] = [...selectedCells, [newRow, newCol]];
-  return validateTakePositions(newSelected);
+  for (let i = 0; i <= selectedCells.length; i++) {
+    const permuted: [number, number][] = [
+      ...selectedCells.slice(0, i),
+      [newRow, newCol],
+      ...selectedCells.slice(i),
+    ];
+    if (validateTakePositions(permuted) === null) {
+      return null;
+    }
+  }
+  return validateTakePositions([...selectedCells, [newRow, newCol]]);
 }
 
 export function takeTokens(

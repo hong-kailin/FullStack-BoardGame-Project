@@ -18,7 +18,7 @@ export function useGameController() {
 
   const canAffordCard = useCallback((cardId: number) => {
     for (const level of state.pyramid) {
-      const card = level.find(c => c.id === cardId);
+      const card = level.find(c => c && c.id === cardId);
       if (card) {
         const actualCost = getActualCost(card, bonuses);
         return canAfford(player, actualCost);

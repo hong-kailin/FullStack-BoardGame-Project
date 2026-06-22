@@ -300,6 +300,16 @@
   border-color: var(--accent);
 }
 
+.privilege-menu {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.privilege-menu .btn-pass {
+  margin: 0;
+}
+
 .action-buttons {
   display: flex;
   gap: 8px;
@@ -379,6 +389,11 @@
 
 .pyramid-card.unaffordable {
   opacity: 0.5;
+}
+
+.pyramid-empty {
+  visibility: hidden;
+  pointer-events: none;
 }
 
 .card-gem {
@@ -688,6 +703,32 @@
   border-radius: 3px;
   padding: 0 3px;
   font-weight: 700;
+}
+
+/* --- 统计表格 --- */
+.stats-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 6px;
+  font-size: 10px;
+}
+
+.stats-table th,
+.stats-table td {
+  padding: 1px 4px;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+}
+
+.stats-table th {
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.stats-table td:first-child {
+  text-align: left;
+  color: var(--text);
+  font-weight: 500;
 }
 
 /* --- 保留卡牌 --- */
